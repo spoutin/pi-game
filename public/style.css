@@ -32,6 +32,43 @@ canvas {
     background: rgba(0,0,0,0.85);
     text-align: center;
 }
+.difficulty-select {
+    background: rgba(10, 58, 26, 0.4);
+    padding: 15px;
+    border: 1px solid #4CAF50;
+    text-align: left;
+    margin: 10px 0;
+}
+.difficulty-select label {
+    display: block;
+    margin-bottom: 5px;
+    cursor: pointer;
+}
+.difficulty-select label:last-child {
+    margin-bottom: 0;
+}
+.penalty-text {
+    font-size: 14px;
+    color: #ffaaaa;
+    margin-top: -5px;
+}
+.stats-box {
+    text-align: left;
+    background: rgba(0, 0, 0, 0.5);
+    padding: 15px;
+    border: 1px dotted #8bc34a;
+    margin-bottom: 15px;
+}
+.stats-box p {
+    margin: 5px 0;
+}
+.total-score {
+    margin-top: 15px;
+    font-size: 24px;
+    color: #ffd700;
+    border-top: 1px solid #333;
+    padding-top: 10px;
+}
 #hud {
     position: absolute;
     top: 10px;
@@ -39,6 +76,7 @@ canvas {
     font-size: 20px;
     font-weight: bold;
     pointer-events: none;
+    text-shadow: 1px 1px 2px #000;
 }
 .hidden { display: none !important; }
 .score-board {

@@ -3,20 +3,85 @@ const ctx = canvas.getContext('2d');
 const uiOverlay = document.getElementById('uiOverlay');
 const startBtn = document.getElementById('startBtn');
 const gameOverScreen = document.getElementById('gameOverScreen');
-const finalTimeEl = document.getElementById('finalTime');
 const restartBtn = document.getElementById('restartBtn');
 const saveScoreBtn = document.getElementById('saveScoreBtn');
 const playerNameInput = document.getElementById('playerName');
 const leaderboardEl = document.getElementById('leaderboard');
 const currentTimeEl = document.getElementById('currentTime');
+const pingCountEl = document.getElementById('pingCount');
+const difficultyRadios = document.getElementsByName('difficulty');
 
-let gameState = 'start'; // start, playing, over
+let gameState = 'start';
 let player = { x: 50, y: 50, vx: 0, vy: 0, radius: 8 };
 let keys = { w: false, a: false, s: false, d: false, space: false };
 let pings = [];
 let startTime = 0;
 let timeElapsed = 0;
 let lastFrame = performance.now();
+let lastBump = 0;
+
+let difficulty = 'easy';
+let freePings = -1; // -1 means unlimited
+let pingsUsed = 0;
+let penaltyPerPing = 3;
+let finalTotalScore = 0;
+
+// Audio Context
+let audioCtx;
+function initAudio() {
+    if (!audioCtx) {
+        audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+    }
+    if (audioCtx.state === 'suspended') audioCtx.resume();
+}
+
+function playPingSound() {
+    if (!audioCtx) return;
+    let osc = audioCtx.createOscillator();
+    let gain = audioCtx.createGain();
+    osc.connect(gain);
+    gain.connect(audioCtx.destination);
+    osc.type = 'sine';
+    osc.frequency.setValueAtTime(800, audioCtx.currentTime);
+    osc.frequency.exponentialRampToValueAtTime(300, audioCtx.currentTime + 0.3);
+    gain.gain.setValueAtTime(0.3, audioCtx.currentTime);
+    gain.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + 0.3);
+    osc.start();
+    osc.stop(audioCtx.currentTime + 0.3);
+}
+
+function playBumpSound() {
+    if (!audioCtx) return;
+    let osc = audioCtx.createOscillator();
+    let gain = audioCtx.createGain();
+    osc.connect(gain);
+    gain.connect(audioCtx.destination);
+    osc.type = 'triangle';
+    osc.frequency.setValueAtTime(100, audioCtx.currentTime);
+    osc.frequency.exponentialRampToValueAtTime(50, audioCtx.currentTime + 0.1);
+    gain.gain.setValueAtTime(0.2, audioCtx.currentTime);
+    gain.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + 0.1);
+    osc.start();
+    osc.stop(audioCtx.currentTime + 0.1);
+}
+
+function playWinSound() {
+    if (!audioCtx) return;
+    const freqs = [440, 554, 659, 880];
+    freqs.forEach((f, i) => {
+        let osc = audioCtx.createOscillator();
+        let gain = audioCtx.createGain();
+        osc.connect(gain);
+        gain.connect(audioCtx.destination);
+        osc.type = 'sine';
+        osc.frequency.value = f;
+        gain.gain.setValueAtTime(0, audioCtx.currentTime + i*0.1);
+        gain.gain.linearRampToValueAtTime(0.3, audioCtx.currentTime + i*0.1 + 0.05);
+        gain.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + i*0.1 + 0.5);
+        osc.start(audioCtx.currentTime + i*0.1);
+        osc.stop(audioCtx.currentTime + i*0.1 + 0.5);
+    });
+}
 
 // Simple Maze (1: wall, 0: open, 2: goal)
 const cellSize = 40;
@@ -37,20 +102,58 @@ const maze = [
 ];
 
 function initGame() {
+    initAudio();
+    
+    // Set Difficulty
+    for (const radio of difficultyRadios) {
+        if (radio.checked) {
+            difficulty = radio.value;
+            break;
+        }
+    }
+    
+    if (difficulty === 'easy') freePings = -1;
+    else if (difficulty === 'medium') freePings = 25;
+    else if (difficulty === 'hard') freePings = 10;
+    
     player = { x: 60, y: 60, vx: 0, vy: 0, radius: 8 };
     pings = [];
+    pingsUsed = 0;
     startTime = Date.now();
     gameState = 'playing';
+    
+    updatePingHUD();
+    
     uiOverlay.classList.add('hidden');
     gameOverScreen.classList.add('hidden');
     lastFrame = performance.now();
     requestAnimationFrame(gameLoop);
 }
 
+function updatePingHUD() {
+    if (freePings === -1) {
+        pingCountEl.innerText = 'Unlimited';
+        pingCountEl.style.color = '#4CAF50';
+    } else {
+        let remaining = freePings - pingsUsed;
+        if (remaining >= 0) {
+            pingCountEl.innerText = remaining;
+            pingCountEl.style.color = '#4CAF50';
+        } else {
+            let penalty = Math.abs(remaining) * penaltyPerPing;
+            pingCountEl.innerText = `0 (+${penalty}s)`;
+            pingCountEl.style.color = '#ff5555';
+        }
+    }
+}
+
 function handlePings(dt) {
     if (keys.space) {
         if (pings.length === 0 || pings[pings.length-1].radius > 100) {
             pings.push({ x: player.x, y: player.y, radius: 0, maxRadius: 300, opacity: 1 });
+            pingsUsed++;
+            updatePingHUD();
+            playPingSound();
         }
         keys.space = false;
     }
@@ -70,9 +173,10 @@ function getCell(x, y) {
     return maze[row][col];
 }
 
-function handlePhysics(dt) {
+function handlePhysics(dt, time) {
     const accel = 800;
     const friction = 0.85;
+    let hitWall = false;
 
     if (keys.w) player.vy -= accel * dt;
     if (keys.s) player.vy += accel * dt;
@@ -91,6 +195,7 @@ function handlePhysics(dt) {
         getCell(newX + Math.sign(player.vx)*player.radius, player.y - player.radius*0.8) === 1 ||
         getCell(newX + Math.sign(player.vx)*player.radius, player.y + player.radius*0.8) === 1) {
         player.vx = 0;
+        hitWall = true;
     } else {
         player.x = newX;
     }
@@ -100,8 +205,14 @@ function handlePhysics(dt) {
         getCell(player.x - player.radius*0.8, newY + Math.sign(player.vy)*player.radius) === 1 ||
         getCell(player.x + player.radius*0.8, newY + Math.sign(player.vy)*player.radius) === 1) {
         player.vy = 0;
+        hitWall = true;
     } else {
         player.y = newY;
+    }
+
+    if (hitWall && time - lastBump > 200) {
+        playBumpSound();
+        lastBump = time;
     }
 
     // Check goal
@@ -120,10 +231,7 @@ function drawScene() {
     ctx.arc(player.x, player.y, player.radius, 0, Math.PI * 2);
     ctx.fill();
 
-    // Create a clipping region based on pings to simulate sonar
-    // We draw the map, but only where pings reveal it.
-    // To do this simply, we'll iterate through grid, and for each wall, check distance to pings.
-    
+    // Draw Map Based on Ping Proximity
     for (let r = 0; r < maze.length; r++) {
         for (let c = 0; c < maze[0].length; c++) {
             let type = maze[r][c];
@@ -134,7 +242,6 @@ function drawScene() {
                 let maxBrightness = 0;
                 for(let p of pings) {
                     let dist = Math.hypot(p.x - cellCenterX, p.y - cellCenterY);
-                    // If the ping ring is near this cell
                     let diff = Math.abs(dist - p.radius);
                     if (diff < cellSize * 1.5) {
                         let brightness = (1 - diff / (cellSize * 1.5)) * p.opacity;
@@ -172,7 +279,7 @@ function gameLoop(time) {
     timeElapsed = (Date.now() - startTime) / 1000;
     currentTimeEl.innerText = timeElapsed.toFixed(1);
 
-    handlePhysics(dt);
+    handlePhysics(dt, time);
     handlePings(dt);
     drawScene();
 
@@ -181,7 +288,23 @@ function gameLoop(time) {
 
 function endGame() {
     gameState = 'over';
-    finalTimeEl.innerText = timeElapsed.toFixed(2);
+    playWinSound();
+    
+    let baseTime = parseFloat(timeElapsed.toFixed(2));
+    let penalty = 0;
+    
+    if (freePings !== -1 && pingsUsed > freePings) {
+        penalty = (pingsUsed - freePings) * penaltyPerPing;
+    }
+    
+    finalTotalScore = parseFloat((baseTime + penalty).toFixed(2));
+    
+    document.getElementById('baseTime').innerText = baseTime.toFixed(2);
+    document.getElementById('penaltyTime').innerText = penalty.toFixed(2);
+    document.getElementById('finalTime').innerText = finalTotalScore.toFixed(2);
+    
+    saveScoreBtn.disabled = false;
+    saveScoreBtn.textContent = 'Save Time';
     gameOverScreen.classList.remove('hidden');
 }
 
@@ -191,7 +314,7 @@ window.addEventListener('keydown', e => {
     if (e.key === 'a' || e.key === 'ArrowLeft') keys.a = true;
     if (e.key === 's' || e.key === 'ArrowDown') keys.s = true;
     if (e.key === 'd' || e.key === 'ArrowRight') keys.d = true;
-    if (e.key === ' ') keys.space = true;
+    if (e.key === ' ') { e.preventDefault(); keys.space = true; } // Prevent scrolling
 });
 window.addEventListener('keyup', e => {
     if (e.key === 'w' || e.key === 'ArrowUp') keys.w = false;
@@ -203,7 +326,12 @@ window.addEventListener('keyup', e => {
 
 // Init events
 startBtn.addEventListener('click', initGame);
-restartBtn.addEventListener('click', initGame);
+restartBtn.addEventListener('click', () => {
+    uiOverlay.classList.remove('hidden');
+    gameOverScreen.classList.add('hidden');
+    ctx.fillStyle = '#000';
+    ctx.fillRect(0, 0, canvas.width, canvas.height);
+});
 
 // API Logic
 async function fetchLeaderboard() {
@@ -225,7 +353,7 @@ saveScoreBtn.addEventListener('click', async () => {
         await fetch('/api/scores', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ name, score: parseFloat(timeElapsed.toFixed(2)) })
+            body: JSON.stringify({ name, score: finalTotalScore })
         });
         playerNameInput.value = '';
         await fetchLeaderboard();
@@ -235,6 +363,5 @@ saveScoreBtn.addEventListener('click', async () => {
 });
 
 fetchLeaderboard();
-// Draw initial dark screen
 ctx.fillStyle = '#000';
 ctx.fillRect(0, 0, canvas.width, canvas.height);
