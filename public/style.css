@@ -1,7 +1,7 @@
 body {
-    font-family: sans-serif;
-    background-color: #2c3e50;
-    color: white;
+    font-family: 'Courier New', Courier, monospace;
+    background-color: #050510;
+    color: #4CAF50;
     display: flex;
     justify-content: center;
     margin: 0;
@@ -11,42 +11,53 @@ body {
     display: flex;
     gap: 20px;
 }
-h1, h2, h3 { margin-top: 0; }
+h1, h2, h3 { margin-top: 0; color: #8bc34a; }
 .game-area {
     position: relative;
-    background-color: #34495e;
-    border: 4px solid #ecf0f1;
-    border-radius: 8px;
+    background-color: #000;
+    border: 2px solid #333;
+    box-shadow: 0 0 15px #4CAF50;
 }
 canvas {
     display: block;
-    background-color: #000;
 }
-.overlay {
+.ui-layer, .overlay {
     position: absolute;
     top: 0; left: 0; right: 0; bottom: 0;
-    background: rgba(0,0,0,0.8);
     display: flex;
     flex-direction: column;
     align-items: center;
     justify-content: center;
-    gap: 10px;
+    gap: 15px;
+    background: rgba(0,0,0,0.85);
+    text-align: center;
+}
+#hud {
+    position: absolute;
+    top: 10px;
+    left: 10px;
+    font-size: 20px;
+    font-weight: bold;
+    pointer-events: none;
 }
 .hidden { display: none !important; }
 .score-board {
-    background-color: #34495e;
+    background-color: #0a0a1a;
     padding: 20px;
-    border-radius: 8px;
+    border: 1px solid #333;
     min-width: 200px;
 }
-ul { padding-left: 20px; }
+ul { padding-left: 0; list-style: none; }
+li { margin-bottom: 8px; font-size: 18px; border-bottom: 1px solid #222; padding-bottom: 4px; }
 button {
-    padding: 10px 20px;
+    padding: 12px 24px;
     cursor: pointer;
-    background-color: #27ae60;
-    color: white;
-    border: none;
-    border-radius: 4px;
+    background-color: #0a3a1a;
+    color: #4CAF50;
+    border: 1px solid #4CAF50;
+    font-family: inherit;
+    font-size: 18px;
+    transition: 0.2s;
 }
-button:hover { background-color: #2ecc71; }
-input { padding: 10px; width: 80%; }
+button:hover { background-color: #1a5a2a; }
+input { padding: 10px; width: 80%; background: #000; color: #4CAF50; border: 1px solid #4CAF50; font-family: inherit;}

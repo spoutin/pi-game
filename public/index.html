@@ -3,26 +3,30 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Snake Game</title>
+    <title>Sonar Escape</title>
     <link rel="stylesheet" href="style.css">
 </head>
 <body>
     <div class="container">
-        <h1>Snake</h1>
         <div class="game-area">
-            <canvas id="gameCanvas" width="400" height="400"></canvas>
+            <canvas id="gameCanvas" width="800" height="600"></canvas>
+            <div id="uiOverlay" class="ui-layer">
+                <h1>Sonar Escape</h1>
+                <p>Use WASD/Arrows to move. SPACE to ping.</p>
+                <button id="startBtn">Start Game</button>
+            </div>
             <div id="gameOverScreen" class="hidden overlay">
-                <h2>Game Over!</h2>
-                <p>Score: <span id="finalScore"></span></p>
-                <input type="text" id="playerName" placeholder="Enter Name (max 20 chars)" maxlength="20">
-                <button id="saveScoreBtn">Save Score</button>
+                <h2>Escaped!</h2>
+                <p>Time: <span id="finalTime"></span>s</p>
+                <input type="text" id="playerName" placeholder="Enter Name" maxlength="20">
+                <button id="saveScoreBtn">Save Time</button>
                 <button id="restartBtn">Play Again</button>
             </div>
+            <div id="hud">Time: <span id="currentTime">0.0</span>s</div>
         </div>
         
         <div class="score-board">
-            <h2>Current Score: <span id="currentScore">0</span></h2>
-            <h3>Top 10 High Scores</h3>
+            <h3>Fastest Escapes</h3>
             <ul id="leaderboard"></ul>
         </div>
     </div>
