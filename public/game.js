@@ -87,3 +87,39 @@ document.addEventListener('keydown', e => {
 });
 
 restartBtn.addEventListener('click', resetGame);
+// API integration
+async function fetchLeaderboard() {
+    try {
+        const res = await fetch('/api/scores');
+        const scores = await res.json();
+        leaderboardEl.innerHTML = '';
+        scores.forEach(s => {
+            const li = document.createElement('li');
+            li.textContent = `${s.name}: ${s.score}`;
+            leaderboardEl.appendChild(li);
+        });
+    } catch (e) { console.error('Error fetching scores:', e); }
+}
+
+saveScoreBtn.addEventListener('click', async () => {
+    const name = playerNameInput.value.trim() || 'Anonymous';
+    try {
+        await fetch('/api/scores', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ name, score })
+        });
+        playerNameInput.value = '';
+        await fetchLeaderboard();
+        saveScoreBtn.disabled = true;
+        saveScoreBtn.textContent = 'Saved!';
+        setTimeout(() => {
+            saveScoreBtn.disabled = false;
+            saveScoreBtn.textContent = 'Save Score';
+        }, 2000);
+    } catch (e) { console.error('Error saving score:', e); }
+});
+
+// Initial load
+fetchLeaderboard();
+resetGame();
