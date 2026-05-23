@@ -31,7 +31,7 @@ app.post('/api/scores', (req, res) => {
     }
     
     scores.push({ name: name.substring(0, 20), score });
-    scores.sort((a, b) => b.score - a.score);
+    scores.sort((a, b) => a.score - b.score);
     scores = scores.slice(0, 10); // Keep top 10
     
     fs.writeFileSync(SCORES_FILE, JSON.stringify(scores, null, 2));
