@@ -339,6 +339,60 @@ function playTypewriterSound() {
     thudOsc.stop(now + 0.05);
 }
 
+function getCell(x, y) {
+    const col = Math.floor(x / cellSize);
+    const row = Math.floor(y / cellSize);
+    if (row >= 0 && row < maze.length && col >= 0 && col < maze[0].length) {
+        return maze[row][col];
+    }
+    return 1;
+}
+
+function handlePings(dt) {
+    if (keys.space && gameState === 'playing') {
+        const now = Date.now();
+        if (!player.lastPing || now - player.lastPing > 500) {
+            pings.push({ x: player.x, y: player.y, radius: 0, opacity: 1, type: 'sonar' });
+            pingsUsed++;
+            updatePingHUD();
+            playPingSound();
+            player.lastPing = now;
+        }
+    }
+    for (let i = pings.length - 1; i >= 0; i--) {
+        let p = pings[i];
+        p.radius += (p.type === 'mine' ? cellSize * 12 : cellSize * 8) * dt;
+        p.opacity -= dt * 0.6;
+        if (p.opacity <= 0) pings.splice(i, 1);
+    }
+}
+
+function updatePingHUD() {
+    if (!pingCountEl) return;
+    if (freePings === -1) {
+        pingCountEl.innerText = 'Unlimited';
+    } else {
+        const remaining = freePings - pingsUsed;
+        if (remaining >= 0) {
+            pingCountEl.innerText = remaining;
+            pingCountEl.style.color = '#4CAF50';
+        } else {
+            pingCountEl.innerText = `+${Math.abs(remaining)}`;
+            pingCountEl.style.color = '#ff3333';
+        }
+    }
+}
+
+function updateHealthHUD() {
+    const healthEl = document.getElementById('healthCount');
+    if (!healthEl) return;
+    let hearts = '';
+    for (let i = 0; i < maxHealth; i++) {
+        hearts += i < currentHealth ? '♥' : '♡';
+    }
+    healthEl.innerText = hearts;
+}
+
 // UI & Layout
 function resizeCanvas() {
     const isMobile = 'ontouchstart' in window || navigator.maxTouchPoints > 0;
