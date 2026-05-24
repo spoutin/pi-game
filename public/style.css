@@ -78,17 +78,20 @@ canvas {
 .game-win-title {
     color: #ffd700 !important;
 }
-#hud {
-    position: absolute;
-    top: 10px;
-    left: 10px;
-    right: 10px;
+.game-wrapper {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+}
+#hud-panel {
+    background-color: #0a0a1a;
+    border: 2px solid #333;
+    padding: 15px 20px;
     font-size: 20px;
     font-weight: bold;
-    pointer-events: none;
-    text-shadow: 1px 1px 2px #000;
     display: flex;
     justify-content: space-between;
+    box-shadow: 0 0 10px #4CAF50;
 }
 #hud-left, #hud-right {
     display: flex;
