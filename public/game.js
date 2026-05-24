@@ -395,37 +395,31 @@ function updateHealthHUD() {
 
 // UI & Layout
 function resizeCanvas() {
-    const isMobile = 'ontouchstart' in window || navigator.maxTouchPoints > 0;
+    const gameArea = document.querySelector('.game-area');
+    const hudLeft = document.getElementById('hud-left');
+    const hudRight = document.getElementById('hud-right');
+    
+    if (!gameArea) return;
+
+    let width = gameArea.clientWidth;
+    let height = gameArea.clientHeight;
+
     const isLandscape = window.innerWidth > window.innerHeight;
-    const isSmallLandscape = isMobile && isLandscape && window.innerHeight <= 500;
 
-    let hudWidth = 0;
-    let padding = isMobile ? 5 : 20;
-    
-    if (isSmallLandscape) {
-        hudWidth = 200; // 100px left + 100px right
-        padding = 0;
+    if (isLandscape) {
+        if (hudLeft) width -= hudLeft.offsetWidth;
+        if (hudRight) width -= hudRight.offsetWidth;
+    } else {
+        if (hudLeft) height -= hudLeft.offsetHeight;
+        if (hudRight) height -= hudRight.offsetHeight;
     }
 
-    const availableWidth = window.innerWidth - padding * 2 - hudWidth;
-    const availableHeight = window.innerHeight - (isSmallLandscape ? 0 : (isMobile ? 100 : 160));
-    
-    let newWidth = availableWidth; 
-    let newHeight = availableWidth * (mazeRows / mazeCols);
-    
-    if (newHeight > availableHeight) { 
-        newHeight = availableHeight; 
-        newWidth = availableHeight * (mazeCols / mazeRows); 
-    }
-    
-    if (!isMobile && newWidth > 1200) { 
-        newWidth = 1200; 
-        newHeight = 1200 * (mazeRows / mazeCols); 
-    }
-    
-    canvas.width = newWidth; 
-    canvas.height = newHeight; 
+    canvas.width = width;
+    canvas.height = height;
     cellSize = canvas.width / mazeCols;
+
+    const isMobile = 'ontouchstart' in window || navigator.maxTouchPoints > 0;
+    const isSmallLandscape = isMobile && isLandscape && window.innerHeight <= 500;
     joystickMaxDist = isSmallLandscape ? 25 : 40;
 }
 
