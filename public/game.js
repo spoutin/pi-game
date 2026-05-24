@@ -55,14 +55,15 @@ let torpedoReloadTime = 10;
 let torpedoTimer = 0;
 let penaltyPerPing = 3;
 let penaltyPerMine = 10;
+let mineHits = 0;
 let finalTotalScore = 0;
 
 // Maze dimensions
 let cellSize = 50;
 const worldCols = 60;
 const worldRows = 60;
-const viewCols = 20;
-const viewRows = 15;
+let viewCols = 20;
+let viewRows = 15;
 let maze = [];
 
 // Audio State
@@ -411,30 +412,13 @@ async function lockOrientation() {
 function resizeCanvas() {
     if (!gameArea) return;
 
-    // In the new simplified layout, the canvas is 100% of the gameArea
-    // and gameArea itself is constrained by aspect-ratio in CSS.
-    // We just need to set the internal resolution to match the rendered size.
-    
-    const oldCellSize = cellSize;
     const rect = gameArea.getBoundingClientRect();
     canvas.width = rect.width;
     canvas.height = rect.height;
     
-    cellSize = canvas.width / viewCols;
-    const scale = cellSize / oldCellSize;
-
-    if (gameState === 'playing') {
-        player.x *= scale;
-        player.y *= scale;
-        player.radius *= scale;
-
-        mines.forEach(m => { m.x *= scale; m.y *= scale; m.radius *= scale; });
-        torpedoes.forEach(t => { t.x *= scale; t.y *= scale; });
-        surfaceShips.forEach(s => { s.x *= scale; s.y *= scale; });
-        depthCharges.forEach(dc => { dc.x *= scale; dc.y *= scale; dc.radius *= scale; });
-        pings.forEach(p => { p.x *= scale; p.y *= scale; p.radius *= scale; });
-        wakes.forEach(w => { w.x *= scale; w.y *= scale; w.radius *= scale; });
-    }
+    cellSize = 50;
+    viewCols = Math.ceil(canvas.width / cellSize);
+    viewRows = Math.ceil(canvas.height / cellSize);
 
     const isMobile = 'ontouchstart' in window || navigator.maxTouchPoints > 0;
     const isLandscape = window.innerWidth > window.innerHeight;
@@ -469,16 +453,24 @@ function generateMaze(cols, rows) {
     let newMaze = Array.from({ length: rows }, () => Array(cols).fill(1));
     for (let r = 0; r < 2; r++) { for (let c = 0; c < cols; c++) newMaze[r][c] = 0; }
     const startR = 3; const startC = 1;
-    function walk(r, c) {
-        newMaze[r][c] = 0;
+    const stack = [[startR, startC]];
+    newMaze[startR][startC] = 0;
+    while (stack.length > 0) {
+        const [r, c] = stack[stack.length - 1];
         const dirs = [[0, 2], [0, -2], [2, 0], [-2, 0]].sort(() => Math.random() - 0.5);
+        let moved = false;
         for (const [dr, dc] of dirs) {
             const nr = r + dr; const nc = c + dc;
-            if (nr >= startR && nr < rows - 1 && nc > 0 && nc < cols - 1 && newMaze[nr][nc] === 1) { newMaze[r + dr / 2][c + dc / 2] = 0; walk(nr, nc); }
+            if (nr >= startR && nr < rows - 1 && nc > 0 && nc < cols - 1 && newMaze[nr][nc] === 1) {
+                newMaze[r + dr / 2][c + dc / 2] = 0;
+                newMaze[nr][nc] = 0;
+                stack.push([nr, nc]);
+                moved = true;
+                break;
+            }
         }
+        if (!moved) stack.pop();
     }
-    walk(startR, startC);
-    newMaze[3][1] = 0; newMaze[3][2] = 0; newMaze[4][1] = 0;
     let placedTreasure = false;
     for (let r = rows - 2; r >= startR; r--) {
         for (let c = cols - 2; c >= 1; c--) { if (newMaze[r][c] === 0) { newMaze[r][c] = 2; placedTreasure = true; break; } }
@@ -707,6 +699,7 @@ function endGame(win = true) {
         statsBox.classList.remove('hidden'); saveScoreBtn.classList.remove('hidden'); playerNameInput.classList.remove('hidden');
         let baseTime = parseFloat(timeElapsed.toFixed(2));
         let pPenalty = (freePings !== -1 && pingsUsed > freePings) ? (pingsUsed - freePings) * penaltyPerPing : 0;
+        pPenalty += mineHits * penaltyPerMine;
         finalTotalScore = parseFloat((baseTime + pPenalty).toFixed(2));
         baseTimeEl.innerText = baseTime.toFixed(2);
         penaltyTimeEl.innerText = pPenalty.toFixed(2);
