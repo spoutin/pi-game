@@ -45,13 +45,13 @@ canvas {
     display: flex;
     flex-direction: column;
     align-items: center;
-    justify-content: flex-start; /* Better for scrollable content */
-    gap: 2vmin;
+    justify-content: flex-start;
+    gap: 1.5vmin;
     background: rgba(0,0,0,0.85);
     text-align: center;
-    padding: 4vmin;
+    padding: 2vmin;
     z-index: 100;
-    font-size: clamp(14px, 2vmin, 24px);
+    font-size: clamp(12px, 2vmin, 20px);
     overflow-y: auto;
 }
 
@@ -65,8 +65,8 @@ canvas {
     margin: auto;
 }
 .ui-layer h1 {
-    font-size: 8vmin;
-    margin-bottom: 2vmin;
+    font-size: 6vmin;
+    margin-bottom: 1vmin;
 }
 .ui-layer button {
     font-size: 4vmin;
@@ -78,11 +78,17 @@ canvas {
     width: 95%;
     max-width: 600px;
     background: rgba(0, 20, 0, 0.7);
-    padding: 2vmin;
+    padding: 1.5vmin;
     border: 1px solid #4CAF50;
     border-radius: 1vmin;
-    font-size: clamp(10px, 1.6vmin, 16px);
+    font-size: clamp(10px, 1.5vmin, 15px);
     box-shadow: inset 0 0 2vmin #0a3a1a;
+}
+
+@media (max-height: 500px) {
+    .instructions {
+        display: none; /* Hide instructions on very short screens to prevent scrolling */
+    }
 }
 .instructions h3 {
     margin: 0 0 1vmin 0;
@@ -157,16 +163,26 @@ canvas {
 }
 .difficulty-select {
     background: rgba(10, 58, 26, 0.4);
-    padding: 2vmin;
+    padding: 1.5vmin;
     border: 1px solid #4CAF50;
     text-align: left;
-    margin: 2vmin 0;
-    font-size: 2.2vmin;
+    margin: 1vmin 0;
+    font-size: 1.8vmin;
 }
-.difficulty-select label {
-    display: block;
-    margin-bottom: 1vmin;
-    cursor: pointer;
+
+@media (max-height: 500px) {
+    .difficulty-select {
+        display: flex;
+        gap: 2vmin;
+        padding: 1vmin;
+    }
+    .difficulty-select label {
+        margin-bottom: 0;
+        font-size: 1.6vmin;
+    }
+    .penalty-text {
+        display: none; /* Hide to save space on very short screens */
+    }
 }
 .difficulty-select label:last-child {
     margin-bottom: 0;
