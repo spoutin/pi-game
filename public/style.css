@@ -39,27 +39,46 @@ body {
     align-items: center;
 }
 
-/* HUD */
-.hud-side {
-    background-color: #0a0a1a;
-    border: 2px solid #333;
-    padding: 1vmin 2vmin;
-    font-size: clamp(14px, 2.5vmin, 24px);
-    font-weight: bold;
-    display: flex;
-    justify-content: space-around;
-    width: 100%;
-    box-shadow: 0 0 10px rgba(76, 175, 80, 0.3);
-    z-index: 5;
+/* Tactical HUD Overlay */
+.tactical-hud {
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    pointer-events: none;
+    z-index: 50;
 }
 
-#hud-left { border-bottom: none; border-radius: 8px 8px 0 0; }
-#hud-right { border-top: none; border-radius: 0 0 8px 8px; }
+.hud-panel {
+    position: absolute;
+    top: 1vmin;
+    padding: 1vmin 1.5vmin;
+    background: rgba(0, 10, 5, 0.6);
+    border: 1px solid rgba(76, 175, 80, 0.3);
+    border-radius: 4px;
+    display: flex;
+    flex-direction: column;
+    gap: 0.5vmin;
+    pointer-events: auto;
+}
+
+.top-left {
+    left: 1vmin;
+}
+
+.top-right {
+    right: 1vmin;
+    align-items: flex-end;
+}
 
 .hud-item {
     display: flex;
     align-items: center;
     gap: 1vmin;
+    color: #4CAF50;
+    font-size: clamp(12px, 1.8vmin, 18px);
+    text-shadow: 0 0 5px #000;
 }
 
 #torpedoUICanvas {
@@ -76,7 +95,7 @@ body {
     box-shadow: 0 0 15px #4CAF50;
     aspect-ratio: 20 / 15;
     max-width: 90vw;
-    max-height: 70dvh; /* Leave room for HUDs */
+    max-height: 90dvh;
     overflow: hidden;
     display: flex;
     justify-content: center;
