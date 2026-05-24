@@ -118,22 +118,8 @@ function startBackgroundAudio() {
     if (!audioCtx) return;
     if (musicNodes.length > 0) return;
     
-    const createDrone = (freq, type, gainValue) => {
-        let osc = audioCtx.createOscillator();
-        let gain = audioCtx.createGain();
-        let panner = audioCtx.createStereoPanner();
-        osc.type = type; osc.frequency.value = freq; gain.gain.value = 0;
-        osc.connect(gain); gain.connect(panner); panner.connect(audioCtx.destination);
-        osc.start();
-        const targetGain = audioSettings.musicEnabled ? (gainValue * audioSettings.musicVolume) : 0;
-        gain.gain.setTargetAtTime(targetGain, audioCtx.currentTime, 2);
-        musicNodes.push({ osc, gain, panner, baseGain: gainValue });
-    };
+    // Ambient noise drones removed per user request in Issue #1
     
-    // Deep underwater drones
-    createDrone(55, 'sine', 0.1); 
-    createDrone(82.41, 'sine', 0.05);
-
     // Setup Engine Sound
     engineOsc = audioCtx.createOscillator();
     engineGain = audioCtx.createGain();
@@ -143,48 +129,68 @@ function startBackgroundAudio() {
     engineOsc.connect(engineGain);
     engineGain.connect(audioCtx.destination);
     engineOsc.start();
-    const engineTargetGain = audioSettings.sfxEnabled ? (0.05 * audioSettings.sfxVolume) : 0;
-    engineGain.gain.setTargetAtTime(engineTargetGain, audioCtx.currentTime, 1);
+    // Start with 0 volume at rest
+    engineGain.gain.setValueAtTime(0, audioCtx.currentTime);
 
     // Minimal Composed Theme (Slow, haunting sequence)
     const melodyScale = [130.81, 146.83, 155.56, 174.61, 196.00]; // C, D, Eb, F, G
     let step = 0;
-    const tempo = 0.8;
+    const tempo = 1.2; // Slightly slower, more atmospheric
     
     const playNextNote = () => {
         if (gameState !== 'playing') return;
         if (audioSettings.musicEnabled) {
             const now = audioCtx.currentTime;
-            // Play a note every 4 beats with some variation
+            
+            // Bass pulse every 2 beats
+            if (step % 2 === 0) {
+                let bassOsc = audioCtx.createOscillator();
+                let bassGain = audioCtx.createGain();
+                bassOsc.type = 'sine';
+                bassOsc.frequency.setValueAtTime(step % 8 === 0 ? 55 : 41.20, now); // A1 or E1
+                bassGain.gain.setValueAtTime(0, now);
+                bassGain.gain.linearRampToValueAtTime(0.08 * audioSettings.musicVolume, now + 0.5);
+                bassGain.gain.exponentialRampToValueAtTime(0.001, now + 2);
+                bassOsc.connect(bassGain);
+                bassGain.connect(audioCtx.destination);
+                bassOsc.start(now);
+                bassOsc.stop(now + 2);
+            }
+
+            // Melody follows a 16-step phrase
             if (step % 4 === 0) {
                 let osc = audioCtx.createOscillator();
                 let gain = audioCtx.createGain();
                 let filter = audioCtx.createBiquadFilter();
                 
-                let freq = melodyScale[Math.floor(Math.random() * melodyScale.length)];
-                if (step % 16 === 0) freq /= 2; // Deep bass start of phrase
+                // Deterministic melody within the 16-step phrase
+                const phraseIndex = (step / 4) % 4;
+                const phraseNotes = [0, 2, 4, 3]; // Scale indices
+                let freq = melodyScale[phraseNotes[phraseIndex]];
+                
+                if ((step / 16) % 2 === 1) freq *= 1.5; // Variation every 16 steps
                 
                 osc.type = 'sine';
                 osc.frequency.setValueAtTime(freq, now);
                 
                 filter.type = 'lowpass';
-                filter.frequency.value = 400;
+                filter.frequency.value = 600;
                 
-                const noteGain = 0.04 * audioSettings.musicVolume;
+                const noteGain = 0.05 * audioSettings.musicVolume;
                 gain.gain.setValueAtTime(0, now);
-                gain.gain.linearRampToValueAtTime(noteGain, now + 0.5);
-                gain.gain.exponentialRampToValueAtTime(0.001, now + 4);
+                gain.gain.linearRampToValueAtTime(noteGain, now + 0.1);
+                gain.gain.exponentialRampToValueAtTime(0.001, now + 3);
                 
                 osc.connect(filter);
                 filter.connect(gain);
                 gain.connect(audioCtx.destination);
                 
                 osc.start(now);
-                osc.stop(now + 4);
+                osc.stop(now + 3);
             }
         }
         step++;
-        musicTimer = setTimeout(playNextNote, tempo * 1000);
+        musicTimer = setTimeout(playNextNote, (tempo / 2) * 1000);
     };
     playNextNote();
 }
@@ -515,9 +521,10 @@ function handlePhysics(dt, time) {
     if (keys.a) player.vx -= accel * dt; if (keys.d) player.vx += accel * dt;
     player.vx *= friction; player.vy *= friction;
     if (engineOsc && engineGain) {
-        const speed = Math.hypot(player.vx, player.vy); const normalizedSpeed = Math.min(1, speed / (cellSize * 5));
-        engineOsc.frequency.setTargetAtTime(45 + normalizedSpeed * 20, audioCtx.currentTime, 0.1);
-        const engineTargetGain = audioSettings.sfxEnabled ? ((0.02 + normalizedSpeed * 0.05) * audioSettings.sfxVolume) : 0;
+        const speed = Math.hypot(player.vx, player.vy); 
+        const normalizedSpeed = Math.min(1, speed / (cellSize * 3)); // More sensitive to speed
+        engineOsc.frequency.setTargetAtTime(40 + normalizedSpeed * 30, audioCtx.currentTime, 0.1);
+        const engineTargetGain = audioSettings.sfxEnabled ? (normalizedSpeed * 0.15 * audioSettings.sfxVolume) : 0;
         engineGain.gain.setTargetAtTime(engineTargetGain, audioCtx.currentTime, 0.1);
     }
     if (Math.abs(player.vx) > 0.1 || Math.abs(player.vy) > 0.1) {
