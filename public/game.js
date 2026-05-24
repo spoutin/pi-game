@@ -406,6 +406,26 @@ function updateHealthHUD() {
 }
 
 // UI & Layout
+async function requestFullscreen() {
+    if (!document.fullscreenElement) {
+        try {
+            await document.documentElement.requestFullscreen();
+        } catch (e) {
+            console.log("Fullscreen not supported or blocked.");
+        }
+    }
+}
+
+async function lockOrientation() {
+    if (screen.orientation && screen.orientation.lock) {
+        try {
+            await screen.orientation.lock('landscape');
+        } catch (e) {
+            console.log("Orientation lock not supported or requires full-screen.");
+        }
+    }
+}
+
 function resizeCanvas() {
     if (!gameArea) return;
 
@@ -491,7 +511,14 @@ function generateMaze(cols, rows) {
 
 // Game Loop Functions
 async function initGame() {
-    initAudio(); startBackgroundAudio(); resizeCanvas();
+    initAudio(); 
+    startBackgroundAudio(); 
+    
+    // Best practice for mobile: Request fullscreen and lock orientation on user gesture
+    await requestFullscreen();
+    await lockOrientation();
+    
+    resizeCanvas();
     for (const radio of difficultyRadios) { if (radio.checked) { difficulty = radio.value; break; } }
     if (difficulty === 'easy') { freePings = -1; torpedoReloadTime = 10; }
     else if (difficulty === 'medium') { freePings = 25; torpedoReloadTime = 30; }
@@ -801,5 +828,6 @@ saveScoreBtn.addEventListener('click', async () => {
 loadSettings();
 fetchLeaderboard();
 window.addEventListener('resize', resizeCanvas);
+document.addEventListener('fullscreenchange', resizeCanvas);
 resizeCanvas();
 ctx.fillStyle = '#000'; ctx.fillRect(0, 0, canvas.width, canvas.height);
