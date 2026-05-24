@@ -63,24 +63,6 @@ const mazeCols = 20;
 const mazeRows = 15;
 let maze = [];
 
-const rawMaze = [
-    [0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0],
-    [0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0],
-    [1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1],
-    [1,0,0,0,1,0,0,0,0,0,1,0,0,3,1,0,0,0,2,1],
-    [1,0,1,0,1,0,1,1,1,0,1,0,1,0,1,0,1,1,0,1],
-    [1,0,1,0,3,0,1,0,0,0,0,0,1,0,0,0,1,0,0,1],
-    [1,0,1,1,1,1,1,0,1,1,1,1,1,1,1,0,1,1,1,1],
-    [1,0,0,0,0,0,0,0,0,0,3,0,0,0,1,0,0,3,0,1],
-    [1,1,1,1,1,0,1,1,1,1,1,1,1,0,1,1,1,1,0,1],
-    [1,0,3,0,1,0,1,0,0,0,0,0,1,0,0,0,0,1,0,1],
-    [1,0,1,0,1,0,1,0,1,1,1,0,1,1,1,1,0,1,0,1],
-    [1,0,1,0,0,0,1,0,1,0,0,0,0,0,0,1,0,0,0,1],
-    [1,0,1,1,1,1,1,0,1,0,1,1,1,1,0,1,1,1,1,1],
-    [1,0,0,0,0,3,0,0,1,0,0,3,0,1,0,0,0,0,0,1],
-    [1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1]
-];
-
 // Audio State
 let audioCtx;
 let musicNodes = [];
@@ -431,11 +413,26 @@ function resizeCanvas() {
     // and gameArea itself is constrained by aspect-ratio in CSS.
     // We just need to set the internal resolution to match the rendered size.
     
+    const oldCellSize = cellSize;
     const rect = gameArea.getBoundingClientRect();
     canvas.width = rect.width;
     canvas.height = rect.height;
     
     cellSize = canvas.width / mazeCols;
+    const scale = cellSize / oldCellSize;
+
+    if (gameState === 'playing') {
+        player.x *= scale;
+        player.y *= scale;
+        player.radius *= scale;
+
+        mines.forEach(m => { m.x *= scale; m.y *= scale; m.radius *= scale; });
+        torpedoes.forEach(t => { t.x *= scale; t.y *= scale; });
+        surfaceShips.forEach(s => { s.x *= scale; s.y *= scale; });
+        depthCharges.forEach(dc => { dc.x *= scale; dc.y *= scale; dc.radius *= scale; });
+        pings.forEach(p => { p.x *= scale; p.y *= scale; p.radius *= scale; });
+        wakes.forEach(w => { w.x *= scale; w.y *= scale; w.radius *= scale; });
+    }
 
     const isMobile = 'ontouchstart' in window || navigator.maxTouchPoints > 0;
     const isLandscape = window.innerWidth > window.innerHeight;
