@@ -192,6 +192,11 @@ canvas {
     align-items: center;
     gap: 15px;
 }
+.hud-side {
+    display: flex;
+    align-items: center;
+    gap: 15px;
+}
 .hidden { display: none !important; }
 .score-board {
     background-color: #0a0a1a;
@@ -426,5 +431,28 @@ input { padding: 10px; width: 80%; background: #000; color: #4CAF50; border: 1px
         gap: 5px;
         text-align: center;
         align-items: center;
+    }
+    #mobile-controls {
+        bottom: 10px;
+        padding: 0 10px;
+        height: 100px;
+        align-items: center;
+    }
+    #joystick-container {
+        width: 80px;
+        height: 80px;
+    }
+    #joystick-base {
+        width: 70px;
+        height: 70px;
+    }
+    #joystick-knob {
+        width: 35px;
+        height: 35px;
+    }
+    .action-btn {
+        width: 60px;
+        padding: 8px;
+        font-size: 12px;
     }
 }
