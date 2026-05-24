@@ -10,12 +10,12 @@
 <body>
     <div class="container">
         <div class="game-wrapper">
-            <div id="hud-left" class="hud-side">
-                <div class="hud-item"><span>HEALTH:</span> <span id="healthCount">♥♥♥</span></div>
-                <div class="hud-item"><span>TIME:</span> <span id="currentTime">0.0</span>s</div>
-            </div>
-
             <div class="game-area">
+                <div id="hud-left" class="hud-side">
+                    <div class="hud-item"><span>HEALTH:</span> <span id="healthCount">♥♥♥</span></div>
+                    <div class="hud-item"><span>TIME:</span> <span id="currentTime">0.0</span>s</div>
+                </div>
+
                 <canvas id="gameCanvas" width="800" height="600"></canvas>
                 
                 <div id="uiOverlay" class="ui-layer">
@@ -100,6 +100,11 @@
                         <button id="btn-fire" class="action-btn">FIRE</button>
                     </div>
                 </div>
+
+                <div id="hud-right" class="hud-side">
+                    <div class="hud-item"><span>PINGS:</span> <span id="pingCount">Unlimited</span></div>
+                    <div class="hud-item"><span>TORPEDO:</span> <canvas id="torpedoUICanvas" width="40" height="15"></canvas></div>
+                </div>
             </div>
 
             <div id="orientationOverlay" class="hidden overlay orientation-layer">
@@ -108,11 +113,6 @@
                     <h2>PLEASE ROTATE DEVICE</h2>
                     <p>This mission requires landscape orientation for optimal sonar operations.</p>
                 </div>
-            </div>
-
-            <div id="hud-right" class="hud-side">
-                <div class="hud-item"><span>PINGS:</span> <span id="pingCount">Unlimited</span></div>
-                <div class="hud-item"><span>TORPEDO:</span> <canvas id="torpedoUICanvas" width="40" height="15"></canvas></div>
             </div>
         </div>
     </div>
