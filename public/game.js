@@ -397,7 +397,7 @@ function updateHealthHUD() {
 function resizeCanvas() {
     const isMobile = 'ontouchstart' in window || navigator.maxTouchPoints > 0;
     const isLandscape = window.innerWidth > window.innerHeight;
-    const isSmallLandscape = isMobile && isLandscape && window.innerHeight < 500;
+    const isSmallLandscape = isMobile && isLandscape && window.innerHeight <= 500;
 
     let hudWidth = 0;
     let padding = isMobile ? 5 : 20;
@@ -793,4 +793,6 @@ saveScoreBtn.addEventListener('click', async () => {
 
 loadSettings();
 fetchLeaderboard();
+window.addEventListener('resize', resizeCanvas);
+resizeCanvas();
 ctx.fillStyle = '#000'; ctx.fillRect(0, 0, canvas.width, canvas.height);

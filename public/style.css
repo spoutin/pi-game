@@ -388,9 +388,6 @@ input { padding: 10px; width: 80%; background: #000; color: #4CAF50; border: 1px
         padding: 0;
         gap: 0;
     }
-    .score-board {
-        display: none; /* Hide leaderboard to save space */
-    }
     .game-wrapper {
         flex-direction: row !important;
         align-items: stretch;
