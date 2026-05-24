@@ -69,6 +69,15 @@ canvas {
     border-top: 1px solid #333;
     padding-top: 10px;
 }
+#healthCount {
+    color: #ff3333;
+}
+.game-over-title {
+    color: #ff3333 !important;
+}
+.game-win-title {
+    color: #ffd700 !important;
+}
 #hud {
     position: absolute;
     top: 10px;

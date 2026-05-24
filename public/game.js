@@ -19,7 +19,10 @@ let pings = [];
 let wakes = [];
 let mines = [];
 let torpedoes = [];
-let mineHits = 0;
+let surfaceShips = [];
+let depthCharges = [];
+let maxHealth = 3;
+let currentHealth = 3;
 let startTime = 0;
 let timeElapsed = 0;
 let lastFrame = performance.now();
@@ -132,6 +135,8 @@ function playTorpedoSound() {
 // Simple Maze (1: wall, 0: open, 2: goal, 3: mine spawn)
 const cellSize = 40;
 const rawMaze = [
+    [0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0],
+    [0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0],
     [1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1],
     [1,0,0,0,1,0,0,0,0,0,1,0,0,3,1,0,0,0,2,1],
     [1,0,1,0,1,0,1,1,1,0,1,0,1,0,1,0,1,1,0,1],
@@ -180,22 +185,36 @@ function initGame() {
     else if (difficulty === 'medium') { freePings = 25; torpedoLimit = 1; }
     else if (difficulty === 'hard') { freePings = 10; torpedoLimit = 0; }
     
-    player = { x: 60, y: 60, vx: 0, vy: 0, radius: 10, invulnTimer: 0, angle: 0 };
+    player = { x: 60, y: 140, vx: 0, vy: 0, radius: 10, invulnTimer: 0, angle: 0 };
     pings = [];
     wakes = [];
     torpedoes = [];
+    surfaceShips = [];
+    depthCharges = [];
     pingsUsed = 0;
     torpedoesUsed = 0;
     mineHits = 0;
+    currentHealth = maxHealth;
     startTime = Date.now();
     gameState = 'playing';
     
     updatePingHUD();
+    updateHealthHUD();
     
     uiOverlay.classList.add('hidden');
     gameOverScreen.classList.add('hidden');
     lastFrame = performance.now();
     requestAnimationFrame(gameLoop);
+}
+
+const healthCountEl = document.getElementById('healthCount');
+
+function updateHealthHUD() {
+    let hearts = '';
+    for (let i = 0; i < maxHealth; i++) {
+        hearts += i < currentHealth ? '♥' : '♡';
+    }
+    healthCountEl.innerText = hearts;
 }
 
 function updatePingHUD() {
@@ -334,6 +353,84 @@ function handlePhysics(dt, time) {
         }
         if (hitMine) continue;
     }
+    
+    // Update Surface Ships
+    if (Math.random() < 0.01 && surfaceShips.length < 2) {
+        // Spawn a new ship
+        surfaceShips.push({
+            x: Math.random() < 0.5 ? -50 : canvas.width + 50,
+            y: 30, // near surface
+            vx: 0,
+            speed: Math.random() * 50 + 50,
+            direction: 0,
+            dropTimer: 0
+        });
+        let ship = surfaceShips[surfaceShips.length - 1];
+        ship.direction = ship.x < 0 ? 1 : -1;
+        ship.vx = ship.speed * ship.direction;
+    }
+    
+    for (let i = surfaceShips.length - 1; i >= 0; i--) {
+        let ship = surfaceShips[i];
+        ship.x += ship.vx * dt;
+        
+        // Drop depth charge if roughly above player
+        if (Math.abs(ship.x - player.x) < 50 && ship.dropTimer <= 0) {
+            depthCharges.push({
+                x: ship.x,
+                y: ship.y + 10,
+                vy: 80, // falls down
+                radius: 6,
+                active: true
+            });
+            ship.dropTimer = 2.0; // cooldown
+        }
+        if (ship.dropTimer > 0) ship.dropTimer -= dt;
+        
+        // Remove if off screen
+        if ((ship.direction === 1 && ship.x > canvas.width + 100) || 
+            (ship.direction === -1 && ship.x < -100)) {
+            surfaceShips.splice(i, 1);
+        }
+    }
+    
+    // Update Depth Charges
+    for (let i = depthCharges.length - 1; i >= 0; i--) {
+        let dc = depthCharges[i];
+        dc.y += dc.vy * dt;
+        
+        // Hit map wall or floor
+        if (getCell(dc.x, dc.y) === 1 || dc.y > canvas.height) {
+            playExplosionSound();
+            pings.push({ x: dc.x, y: dc.y, radius: 0, opacity: 1, type: 'mine' }); // explosion ping
+            depthCharges.splice(i, 1);
+            continue;
+        }
+        
+        // Hit player
+        if (player.invulnTimer <= 0) {
+            let dist = Math.hypot(player.x - dc.x, player.y - dc.y);
+            if (dist < player.radius + dc.radius) {
+                currentHealth--;
+                updateHealthHUD();
+                playExplosionSound();
+                player.invulnTimer = 1.0;
+                
+                // Bounce back
+                let angle = Math.atan2(player.y - dc.y, player.x - dc.x);
+                player.vx = Math.cos(angle) * 500;
+                player.vy = Math.sin(angle) * 500;
+                
+                pings.push({ x: dc.x, y: dc.y, radius: 0, opacity: 1, type: 'mine' });
+                depthCharges.splice(i, 1);
+                
+                if (currentHealth <= 0) {
+                    endGame(false);
+                }
+                continue;
+            }
+        }
+    }
 
     let newX = player.x + player.vx * dt;
     let newY = player.y + player.vy * dt;
@@ -373,6 +470,8 @@ function handlePhysics(dt, time) {
             if (dist < player.radius + m.radius) {
                 // Collision!
                 mineHits++;
+                currentHealth--;
+                updateHealthHUD();
                 playExplosionSound();
                 player.invulnTimer = 1.0; // 1 second invulnerability
                 
@@ -380,6 +479,10 @@ function handlePhysics(dt, time) {
                 let angle = Math.atan2(player.y - m.y, player.x - m.x);
                 player.vx = Math.cos(angle) * 500;
                 player.vy = Math.sin(angle) * 500;
+                
+                if (currentHealth <= 0) {
+                    endGame(false);
+                }
                 break;
             }
         }
@@ -400,6 +503,34 @@ function drawScene() {
         ctx.fillStyle = `rgba(180, 240, 255, ${w.opacity})`;
         ctx.beginPath();
         ctx.arc(w.x, w.y, w.radius, 0, Math.PI * 2);
+        ctx.fill();
+    }
+
+    // Draw Surface Ships
+    for (let s of surfaceShips) {
+        ctx.fillStyle = '#888';
+        ctx.beginPath();
+        // Ship hull
+        ctx.moveTo(s.x - 30 * s.direction, s.y);
+        ctx.lineTo(s.x + 20 * s.direction, s.y);
+        ctx.lineTo(s.x + 30 * s.direction, s.y - 15);
+        ctx.lineTo(s.x - 20 * s.direction, s.y - 15);
+        ctx.fill();
+        // Ship cabin
+        ctx.fillStyle = '#666';
+        ctx.fillRect(s.x - 10, s.y - 25, 20, 10);
+    }
+    
+    // Draw Depth Charges
+    for (let dc of depthCharges) {
+        ctx.fillStyle = '#333';
+        ctx.beginPath();
+        ctx.arc(dc.x, dc.y, dc.radius, 0, Math.PI * 2);
+        ctx.fill();
+        // Little light on it
+        ctx.fillStyle = '#ff0000';
+        ctx.beginPath();
+        ctx.arc(dc.x, dc.y - 2, 2, 0, Math.PI * 2);
         ctx.fill();
     }
 
@@ -427,40 +558,69 @@ function drawScene() {
     
     let subColor = '#4CAF50';
     let subDark = '#2e7d32';
+    let subHighlight = '#81c784';
     
     if (player.invulnTimer > 0 && Math.floor(Date.now() / 100) % 2 === 0) {
         subColor = '#ff5555';
         subDark = '#cc0000';
+        subHighlight = '#ff8888';
     }
     
-    // Submarine hull
+    // Submarine shadow / shading
+    ctx.fillStyle = subDark;
+    ctx.beginPath();
+    ctx.ellipse(0, 2, player.radius * 2, player.radius * 1.2, 0, 0, Math.PI * 2);
+    ctx.fill();
+    
+    // Submarine main hull
     ctx.fillStyle = subColor;
     ctx.beginPath();
     ctx.ellipse(0, 0, player.radius * 2, player.radius * 1.2, 0, 0, Math.PI * 2);
     ctx.fill();
     
+    // Hull highlight (gives a 3D rounded look)
+    ctx.fillStyle = subHighlight;
+    ctx.beginPath();
+    ctx.ellipse(0, -3, player.radius * 1.5, player.radius * 0.5, 0, 0, Math.PI * 2);
+    ctx.fill();
+    
     // Conning tower (sail)
     ctx.fillStyle = subDark;
-    ctx.fillRect(-player.radius * 0.2, -player.radius * 1.8, player.radius * 1.2, player.radius);
+    ctx.fillRect(-player.radius * 0.4, -player.radius * 2, player.radius * 1.2, player.radius * 1.2);
+    ctx.fillStyle = subColor;
+    ctx.fillRect(-player.radius * 0.4, -player.radius * 2.2, player.radius * 1.2, player.radius * 0.4);
     
-    // Window on sail
+    // Window on sail with glass reflection
+    ctx.fillStyle = '#01579b'; // dark blue rim
+    ctx.beginPath();
+    ctx.arc(player.radius * 0.2, -player.radius * 1.5, player.radius * 0.4, 0, Math.PI * 2);
+    ctx.fill();
     ctx.fillStyle = '#81d4fa'; // light blue window
     ctx.beginPath();
-    ctx.arc(player.radius * 0.4, -player.radius * 1.4, player.radius * 0.3, 0, Math.PI * 2);
+    ctx.arc(player.radius * 0.2, -player.radius * 1.5, player.radius * 0.3, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.fillStyle = '#ffffff'; // glare
+    ctx.beginPath();
+    ctx.arc(player.radius * 0.1, -player.radius * 1.6, player.radius * 0.1, 0, Math.PI * 2);
     ctx.fill();
     
-    // Tail fin
-    ctx.fillStyle = subColor;
+    // Tail fin (top and bottom)
+    ctx.fillStyle = subDark;
     ctx.beginPath();
     ctx.moveTo(-player.radius * 1.5, 0);
-    ctx.lineTo(-player.radius * 2.5, -player.radius * 1.2);
-    ctx.lineTo(-player.radius * 2.5, player.radius * 1.2);
+    ctx.lineTo(-player.radius * 2.8, -player.radius * 1.5);
+    ctx.lineTo(-player.radius * 2.2, 0);
+    ctx.lineTo(-player.radius * 2.8, player.radius * 1.5);
     ctx.fill();
     
+    // Propeller housing
+    ctx.fillStyle = '#424242';
+    ctx.fillRect(-player.radius * 3.0, -player.radius * 0.4, player.radius * 0.8, player.radius * 0.8);
+    
     // Propeller spinning effect
-    ctx.fillStyle = '#9e9e9e'; // grey
-    let propScale = Math.abs(Math.sin(Date.now() / 50));
-    ctx.fillRect(-player.radius * 2.8, -player.radius * 0.8 * propScale, player.radius * 0.3, player.radius * 1.6 * propScale);
+    ctx.fillStyle = '#bdbdbd'; // light grey
+    let propScale = Math.abs(Math.sin(Date.now() / 30));
+    ctx.fillRect(-player.radius * 3.2, -player.radius * 1.2 * propScale, player.radius * 0.4, player.radius * 2.4 * propScale);
     
     ctx.restore();
 
@@ -595,24 +755,40 @@ function gameLoop(time) {
     requestAnimationFrame(gameLoop);
 }
 
-function endGame() {
+function endGame(win = true) {
     gameState = 'over';
-    playWinSound();
     
-    let baseTime = parseFloat(timeElapsed.toFixed(2));
-    let pPenalty = 0;
-    let mPenalty = mineHits * penaltyPerMine;
+    const statsBox = document.getElementById('statsBox');
+    const titleEl = document.getElementById('endGameTitle');
     
-    if (freePings !== -1 && pingsUsed > freePings) {
-        pPenalty = (pingsUsed - freePings) * penaltyPerPing;
+    if (win) {
+        playWinSound();
+        titleEl.innerText = 'Escaped!';
+        titleEl.className = 'game-win-title';
+        statsBox.classList.remove('hidden');
+        saveScoreBtn.classList.remove('hidden');
+        playerNameInput.classList.remove('hidden');
+        
+        let baseTime = parseFloat(timeElapsed.toFixed(2));
+        let pPenalty = 0;
+        
+        if (freePings !== -1 && pingsUsed > freePings) {
+            pPenalty = (pingsUsed - freePings) * penaltyPerPing;
+        }
+        
+        finalTotalScore = parseFloat((baseTime + pPenalty).toFixed(2));
+        
+        document.getElementById('baseTime').innerText = baseTime.toFixed(2);
+        document.getElementById('penaltyTime').innerText = pPenalty.toFixed(2);
+        document.getElementById('finalTime').innerText = finalTotalScore.toFixed(2);
+    } else {
+        playExplosionSound();
+        titleEl.innerText = 'Destroyed!';
+        titleEl.className = 'game-over-title';
+        statsBox.classList.add('hidden');
+        saveScoreBtn.classList.add('hidden');
+        playerNameInput.classList.add('hidden');
     }
-    
-    finalTotalScore = parseFloat((baseTime + pPenalty + mPenalty).toFixed(2));
-    
-    document.getElementById('baseTime').innerText = baseTime.toFixed(2);
-    document.getElementById('penaltyTime').innerText = pPenalty.toFixed(2);
-    document.getElementById('minePenaltyTime').innerText = mPenalty.toFixed(2);
-    document.getElementById('finalTime').innerText = finalTotalScore.toFixed(2);
     
     saveScoreBtn.disabled = false;
     saveScoreBtn.textContent = 'Save Time';
