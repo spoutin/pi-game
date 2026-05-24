@@ -396,13 +396,36 @@ function updateHealthHUD() {
 // UI & Layout
 function resizeCanvas() {
     const isMobile = 'ontouchstart' in window || navigator.maxTouchPoints > 0;
-    const padding = isMobile ? 5 : 20;
-    const availableWidth = window.innerWidth - padding * 2;
-    const availableHeight = window.innerHeight - (isMobile ? 100 : 160);
-    let newWidth = availableWidth; let newHeight = availableWidth * (mazeRows / mazeCols);
-    if (newHeight > availableHeight) { newHeight = availableHeight; newWidth = availableHeight * (mazeCols / mazeRows); }
-    if (!isMobile && newWidth > 1200) { newWidth = 1200; newHeight = 1200 * (mazeRows / mazeCols); }
-    canvas.width = newWidth; canvas.height = newHeight; cellSize = canvas.width / mazeCols;
+    const isLandscape = window.innerWidth > window.innerHeight;
+    const isSmallLandscape = isMobile && isLandscape && window.innerHeight < 500;
+
+    let hudWidth = 0;
+    let padding = isMobile ? 5 : 20;
+    
+    if (isSmallLandscape) {
+        hudWidth = 200; // 100px left + 100px right
+        padding = 0;
+    }
+
+    const availableWidth = window.innerWidth - padding * 2 - hudWidth;
+    const availableHeight = window.innerHeight - (isSmallLandscape ? 0 : (isMobile ? 100 : 160));
+    
+    let newWidth = availableWidth; 
+    let newHeight = availableWidth * (mazeRows / mazeCols);
+    
+    if (newHeight > availableHeight) { 
+        newHeight = availableHeight; 
+        newWidth = availableHeight * (mazeCols / mazeRows); 
+    }
+    
+    if (!isMobile && newWidth > 1200) { 
+        newWidth = 1200; 
+        newHeight = 1200 * (mazeRows / mazeCols); 
+    }
+    
+    canvas.width = newWidth; 
+    canvas.height = newHeight; 
+    cellSize = canvas.width / mazeCols;
 }
 
 function toggleMobileControls(show) {
