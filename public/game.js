@@ -187,6 +187,15 @@ function resizeCanvas() {
 window.addEventListener('resize', resizeCanvas);
 resizeCanvas();
 
+function toggleMobileControls(show) {
+    if (!mobileControls) return;
+    const isTouch = 'ontouchstart' in window || navigator.maxTouchPoints > 0;
+    if (isTouch) {
+        if (show) mobileControls.classList.remove('hidden');
+        else mobileControls.classList.add('hidden');
+    }
+}
+
 function initGame() {
     initAudio();
     resizeCanvas(); // Ensure correct size before starting
@@ -239,6 +248,7 @@ function initGame() {
     
     uiOverlay.classList.add('hidden');
     gameOverScreen.classList.add('hidden');
+    toggleMobileControls(true);
     lastFrame = performance.now();
     requestAnimationFrame(gameLoop);
 }
@@ -870,6 +880,7 @@ function gameLoop(time) {
 
 function endGame(win = true) {
     gameState = 'over';
+    toggleMobileControls(false);
     
     const statsBox = document.getElementById('statsBox');
     const titleEl = document.getElementById('endGameTitle');
@@ -1015,10 +1026,7 @@ if (btnFire) {
     });
 }
 
-// Show mobile controls if touch device is detected
-if ('ontouchstart' in window || navigator.maxTouchPoints > 0) {
-    mobileControls.classList.remove('hidden');
-}
+// Show mobile controls logic moved to toggleMobileControls helper called in initGame/endGame
 
 window.addEventListener('keydown', e => {
     if (e.key === 'w' || e.key === 'ArrowUp') keys.w = true;
@@ -1062,6 +1070,7 @@ startBtn.addEventListener('click', initGame);
 restartBtn.addEventListener('click', () => {
     uiOverlay.classList.remove('hidden');
     gameOverScreen.classList.add('hidden');
+    toggleMobileControls(false);
     ctx.fillStyle = '#000';
     ctx.fillRect(0, 0, canvas.width, canvas.height);
 });
