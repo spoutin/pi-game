@@ -1,5 +1,8 @@
 const canvas = document.getElementById('gameCanvas');
 const ctx = canvas.getContext('2d');
+const gameArea = document.querySelector('.game-area');
+const hudLeft = document.getElementById('hud-left');
+const hudRight = document.getElementById('hud-right');
 const uiOverlay = document.getElementById('uiOverlay');
 const startBtn = document.getElementById('startBtn');
 const gameOverScreen = document.getElementById('gameOverScreen');
@@ -10,6 +13,16 @@ const leaderboardEl = document.getElementById('leaderboard');
 const currentTimeEl = document.getElementById('currentTime');
 const pingCountEl = document.getElementById('pingCount');
 const difficultyRadios = document.getElementsByName('difficulty');
+
+const healthCountEl = document.getElementById('healthCount');
+const missionOverlay = document.getElementById('missionOverlay');
+const missionText = document.getElementById('missionText');
+const missionContinue = document.getElementById('missionContinue');
+const statsBox = document.getElementById('statsBox');
+const endGameTitle = document.getElementById('endGameTitle');
+const baseTimeEl = document.getElementById('baseTime');
+const penaltyTimeEl = document.getElementById('penaltyTime');
+const finalTimeEl = document.getElementById('finalTime');
 
 // Audio Settings UI Elements
 const settingsBtn = document.getElementById('settingsBtn');
@@ -384,38 +397,42 @@ function updatePingHUD() {
 }
 
 function updateHealthHUD() {
-    const healthEl = document.getElementById('healthCount');
-    if (!healthEl) return;
+    if (!healthCountEl) return;
     let hearts = '';
     for (let i = 0; i < maxHealth; i++) {
         hearts += i < currentHealth ? '♥' : '♡';
     }
-    healthEl.innerText = hearts;
+    healthCountEl.innerText = hearts;
 }
 
 // UI & Layout
 function resizeCanvas() {
-    const gameArea = document.querySelector('.game-area');
-    const hudLeft = document.getElementById('hud-left');
-    const hudRight = document.getElementById('hud-right');
-    
     if (!gameArea) return;
 
-    let width = gameArea.clientWidth;
-    let height = gameArea.clientHeight;
+    let availableWidth = gameArea.clientWidth;
+    let availableHeight = gameArea.clientHeight;
 
     const isLandscape = window.innerWidth > window.innerHeight;
 
     if (isLandscape) {
-        if (hudLeft) width -= hudLeft.offsetWidth;
-        if (hudRight) width -= hudRight.offsetWidth;
+        if (hudLeft) availableWidth -= hudLeft.offsetWidth;
+        if (hudRight) availableWidth -= hudRight.offsetWidth;
     } else {
-        if (hudLeft) height -= hudLeft.offsetHeight;
-        if (hudRight) height -= hudRight.offsetHeight;
+        if (hudLeft) availableHeight -= hudLeft.offsetHeight;
+        if (hudRight) availableHeight -= hudRight.offsetHeight;
     }
 
-    canvas.width = width;
-    canvas.height = height;
+    // Aspect Ratio Safety: Maze is strictly 20x15
+    let targetWidth = availableWidth;
+    let targetHeight = availableWidth * (15/20);
+
+    if (targetHeight > availableHeight) {
+        targetHeight = availableHeight;
+        targetWidth = availableHeight * (20/15);
+    }
+
+    canvas.width = targetWidth;
+    canvas.height = targetHeight;
     cellSize = canvas.width / mazeCols;
 
     const isMobile = 'ontouchstart' in window || navigator.maxTouchPoints > 0;
@@ -430,9 +447,6 @@ function toggleMobileControls(show) {
 }
 
 async function showMissionBriefing() {
-    const missionOverlay = document.getElementById('missionOverlay');
-    const missionText = document.getElementById('missionText');
-    const missionContinue = document.getElementById('missionContinue');
     const fullText = "MISSION BRIEFING:\n\nDetecting high-value treasure at the end of this sector.\n\nNAVCOM: Use your active SONAR (SPACE) to illuminate the terrain. The abyss is deep and visibility is zero.\n\nCAUTION: Waters are heavily mined. Deploy TORPEDOES (SHIFT/CLICK) to neutralize threats.\n\nGood luck, Commander.";
     missionOverlay.classList.remove('hidden', 'fade-out'); missionContinue.classList.add('hidden'); missionText.textContent = "";
     for (let i = 0; i < fullText.length; i++) {
@@ -679,18 +693,17 @@ function gameLoop(time) {
 
 function endGame(win = true) {
     gameState = 'over'; toggleMobileControls(false); stopBackgroundAudio();
-    const statsBox = document.getElementById('statsBox'); const titleEl = document.getElementById('endGameTitle');
     if (win) {
-        playWinSound(); titleEl.innerText = 'Escaped!'; titleEl.className = 'game-win-title';
+        playWinSound(); endGameTitle.innerText = 'Escaped!'; endGameTitle.className = 'game-win-title';
         statsBox.classList.remove('hidden'); saveScoreBtn.classList.remove('hidden'); playerNameInput.classList.remove('hidden');
         let baseTime = parseFloat(timeElapsed.toFixed(2));
         let pPenalty = (freePings !== -1 && pingsUsed > freePings) ? (pingsUsed - freePings) * penaltyPerPing : 0;
         finalTotalScore = parseFloat((baseTime + pPenalty).toFixed(2));
-        document.getElementById('baseTime').innerText = baseTime.toFixed(2);
-        document.getElementById('penaltyTime').innerText = pPenalty.toFixed(2);
-        document.getElementById('finalTime').innerText = finalTotalScore.toFixed(2);
+        baseTimeEl.innerText = baseTime.toFixed(2);
+        penaltyTimeEl.innerText = pPenalty.toFixed(2);
+        finalTimeEl.innerText = finalTotalScore.toFixed(2);
     } else {
-        playExplosionSound(); titleEl.innerText = 'Destroyed!'; titleEl.className = 'game-over-title';
+        playExplosionSound(); endGameTitle.innerText = 'Destroyed!'; endGameTitle.className = 'game-over-title';
         statsBox.classList.add('hidden'); saveScoreBtn.classList.add('hidden'); playerNameInput.classList.add('hidden');
     }
     saveScoreBtn.disabled = false; saveScoreBtn.textContent = 'Save Time'; gameOverScreen.classList.remove('hidden');
