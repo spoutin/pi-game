@@ -38,11 +38,62 @@ let finalTotalScore = 0;
 
 // Audio Context
 let audioCtx;
+let musicNodes = [];
+
 function initAudio() {
     if (!audioCtx) {
         audioCtx = new (window.AudioContext || window.webkitAudioContext)();
     }
     if (audioCtx.state === 'suspended') audioCtx.resume();
+}
+
+function startAmbientMusic() {
+    if (!audioCtx) return;
+    if (musicNodes.length > 0) return; // Already playing
+
+    // Create a slow, deep, pulsing drone
+    const createDrone = (freq, type, gainValue, pulseSpeed) => {
+        let osc = audioCtx.createOscillator();
+        let gain = audioCtx.createGain();
+        let panner = audioCtx.createStereoPanner();
+        
+        osc.type = type;
+        osc.frequency.value = freq;
+        
+        gain.gain.value = 0;
+        
+        osc.connect(gain);
+        gain.connect(panner);
+        panner.connect(audioCtx.destination);
+        
+        osc.start();
+        
+        // Slow pulsing volume
+        const now = audioCtx.currentTime;
+        gain.gain.setTargetAtTime(gainValue, now, 2);
+        
+        // Panning movement
+        panner.pan.setValueAtTime(-0.5, now);
+        panner.pan.linearRampToValueAtTime(0.5, now + 10);
+        
+        musicNodes.push({ osc, gain, panner });
+    };
+
+    // Sub-bass drone
+    createDrone(60, 'sine', 0.1, 8);
+    // Mid-range harmonic
+    createDrone(90, 'sine', 0.05, 12);
+    // Higher "sonar" shimmer
+    createDrone(150, 'sine', 0.02, 20);
+}
+
+function stopAmbientMusic() {
+    musicNodes.forEach(node => {
+        const now = audioCtx.currentTime;
+        node.gain.gain.setTargetAtTime(0, now, 1);
+        setTimeout(() => node.osc.stop(), 2000);
+    });
+    musicNodes = [];
 }
 
 function playPingSound(isMine = false) {
@@ -236,10 +287,12 @@ async function showMissionBriefing() {
     missionOverlay.classList.add('fade-out');
     await new Promise(r => setTimeout(r, 1000));
     missionOverlay.classList.add('hidden');
+    toggleMobileControls(true); // Show controls AFTER briefing
 }
 
 async function initGame() {
     initAudio();
+    startAmbientMusic();
     resizeCanvas(); // Ensure correct size before starting
     
     // Set Difficulty
