@@ -94,11 +94,12 @@ canvas {
     color: #4CAF50;
 }
 #missionText {
-    white-space: pre-line;
-    font-size: 1.2rem;
-    line-height: 1.5;
+    white-space: pre-wrap;
+    font-size: 1.1rem;
+    line-height: 1.6;
     margin-top: 20px;
     min-height: 100px;
+    text-align: left;
 }
 .continue-hint {
     margin-top: 30px;

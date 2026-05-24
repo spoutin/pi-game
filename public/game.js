@@ -204,13 +204,17 @@ async function showMissionBriefing() {
     
     missionOverlay.classList.remove('hidden', 'fade-out');
     missionContinue.classList.add('hidden');
-    missionText.innerText = "";
+    missionText.textContent = "";
     
     // Typing effect
     for (let i = 0; i < fullText.length; i++) {
-        missionText.innerText += fullText[i];
+        missionText.textContent += fullText[i];
         // Wait for every character to create a consistent rhythmic typing feel
-        await new Promise(r => setTimeout(r, 25));
+        if (fullText[i] === "\n") {
+            await new Promise(r => setTimeout(r, 200)); // Pause on newlines
+        } else {
+            await new Promise(r => setTimeout(r, 25));
+        }
     }
     
     // Show continue hint
