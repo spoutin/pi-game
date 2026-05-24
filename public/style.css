@@ -42,6 +42,75 @@ canvas {
     gap: 15px;
     background: rgba(0,0,0,0.85);
     text-align: center;
+    padding: 20px;
+    box-sizing: border-box;
+}
+.instructions {
+    text-align: left;
+    max-width: 500px;
+    background: rgba(0, 20, 0, 0.7);
+    padding: 20px;
+    border: 1px solid #4CAF50;
+    border-radius: 8px;
+    font-size: 14px;
+    box-shadow: inset 0 0 10px #0a3a1a;
+}
+.instructions h3 {
+    margin: 0 0 10px 0;
+    color: #ffd700;
+    border-bottom: 1px solid rgba(76, 175, 80, 0.3);
+    padding-bottom: 5px;
+    text-transform: uppercase;
+    letter-spacing: 2px;
+}
+.instructions p {
+    margin-bottom: 15px;
+    line-height: 1.4;
+}
+.instructions ul {
+    margin: 5px 0;
+    padding-left: 20px;
+    list-style-type: square;
+}
+.instructions li {
+    margin-bottom: 5px;
+}
+.instructions strong {
+    color: #4CAF50;
+}
+.mission-layer {
+    background: rgba(0, 5, 0, 0.95);
+    z-index: 20;
+}
+.mission-briefing {
+    border: 2px solid #4CAF50;
+    padding: 30px;
+    border-radius: 10px;
+    background: linear-gradient(135deg, #051a05, #000);
+    box-shadow: 0 0 20px #4CAF50;
+    max-width: 80%;
+    animation: digital-flicker 0.2s infinite;
+    text-shadow: 0 0 5px #4CAF50;
+    color: #4CAF50;
+}
+#missionText {
+    white-space: pre-line;
+    font-size: 1.2rem;
+    line-height: 1.5;
+    margin-top: 20px;
+    min-height: 100px;
+}
+@keyframes digital-flicker {
+    0% { opacity: 1; }
+    50% { opacity: 0.98; }
+    100% { opacity: 1; }
+}
+.mission-layer.fade-out {
+    animation: zoom-fade-out 1s forwards;
+}
+@keyframes zoom-fade-out {
+    0% { transform: scale(1); opacity: 1; filter: blur(0); }
+    100% { transform: scale(3); opacity: 0; filter: blur(10px); }
 }
 .difficulty-select {
     background: rgba(10, 58, 26, 0.4);

@@ -15,15 +15,30 @@
                 
                 <div id="uiOverlay" class="ui-layer">
                     <h1>Sonar Escape</h1>
-                    <p>Use WASD/Arrows to move. SPACE to ping. SHIFT or CLICK to fire Torpedo.</p>
+                    <div class="instructions">
+                        <h3>Mission Objective</h3>
+                        <p>Navigate the dark abyss, avoid surface depth charges and underwater mines, and reach the <strong>Treasure Chest</strong> at the exit.</p>
+                        <h3>Controls</h3>
+                        <ul>
+                            <li><strong>Move:</strong> WASD / Arrows (or Virtual Joystick)</li>
+                            <li><strong>Reveal:</strong> SPACE (or PING button)</li>
+                            <li><strong>Clear Mines:</strong> SHIFT / CLICK (or FIRE button)</li>
+                        </ul>
+                    </div>
                     <div class="difficulty-select">
                         <label><input type="radio" name="difficulty" value="easy" checked> Easy (Unlimited Pings, Torpedo Reload: 10s)</label><br>
                         <label><input type="radio" name="difficulty" value="medium"> Medium (25 Pings, Torpedo Reload: 30s)</label><br>
                         <label><input type="radio" name="difficulty" value="hard"> Hard (10 Pings, Torpedo Reload: 60s)</label>
                     </div>
                     <p class="penalty-text">Medium/Hard: +3s penalty per extra ping used.</p>
-                    <p class="penalty-text">Torpedoes destroy mines.</p>
-                    <button id="startBtn">Start Game</button>
+                    <button id="startBtn">Start Mission</button>
+                </div>
+
+                <div id="missionOverlay" class="hidden overlay mission-layer">
+                    <div class="mission-briefing">
+                        <h2 class="typing-text">Incoming Transmission...</h2>
+                        <p id="missionText"></p>
+                    </div>
                 </div>
 
                 <div id="gameOverScreen" class="hidden overlay">

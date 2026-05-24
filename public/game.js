@@ -196,10 +196,54 @@ function toggleMobileControls(show) {
     }
 }
 
-function initGame() {
+async function showMissionBriefing() {
+    const missionOverlay = document.getElementById('missionOverlay');
+    const missionText = document.getElementById('missionText');
+    const fullText = "Find the treasure.\n\nPing to find the path, and use your torpedoes to destroy the mines.";
+    
+    missionOverlay.classList.remove('hidden', 'fade-out');
+    missionText.innerText = "";
+    
+    // Typing effect
+    for (let i = 0; i < fullText.length; i++) {
+        missionText.innerText += fullText[i];
+        if (fullText[i] !== " ") {
+            // Play a tiny tick sound if we had one, but we'll just wait
+            await new Promise(r => setTimeout(r, 30));
+        }
+    }
+    
+    // Wait a bit after typing is done
+    await new Promise(r => setTimeout(r, 2000));
+    
+    // Interesting fade out
+    missionOverlay.classList.add('fade-out');
+    await new Promise(r => setTimeout(r, 1000));
+    missionOverlay.classList.add('hidden');
+}
+
+async function initGame() {
     initAudio();
     resizeCanvas(); // Ensure correct size before starting
     
+    // Set Difficulty
+    for (const radio of difficultyRadios) {
+        if (radio.checked) {
+            difficulty = radio.value;
+            break;
+        }
+    }
+    
+    if (difficulty === 'easy') { freePings = -1; torpedoReloadTime = 10; }
+    else if (difficulty === 'medium') { freePings = 25; torpedoReloadTime = 30; }
+    else if (difficulty === 'hard') { freePings = 10; torpedoReloadTime = 60; }
+
+    uiOverlay.classList.add('hidden');
+    gameOverScreen.classList.add('hidden');
+    
+    // Show mission briefing before starting the action
+    await showMissionBriefing();
+
     // Parse map and spawn mines
     maze = JSON.parse(JSON.stringify(rawMaze));
     mines = [];
@@ -216,18 +260,6 @@ function initGame() {
             }
         }
     }
-    
-    // Set Difficulty
-    for (const radio of difficultyRadios) {
-        if (radio.checked) {
-            difficulty = radio.value;
-            break;
-        }
-    }
-    
-    if (difficulty === 'easy') { freePings = -1; torpedoReloadTime = 10; }
-    else if (difficulty === 'medium') { freePings = 25; torpedoReloadTime = 30; }
-    else if (difficulty === 'hard') { freePings = 10; torpedoReloadTime = 60; }
     
     // Start at a relative position (1.5 cells in, 3.5 cells down)
     player = { x: cellSize * 1.5, y: cellSize * 3.5, vx: 0, vy: 0, radius: cellSize * 0.25, invulnTimer: 0, angle: 0 };
@@ -246,8 +278,6 @@ function initGame() {
     updatePingHUD();
     updateHealthHUD();
     
-    uiOverlay.classList.add('hidden');
-    gameOverScreen.classList.add('hidden');
     toggleMobileControls(true);
     lastFrame = performance.now();
     requestAnimationFrame(gameLoop);
