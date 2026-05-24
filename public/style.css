@@ -94,8 +94,9 @@ body {
     border: 2px solid #333;
     box-shadow: 0 0 15px #4CAF50;
     aspect-ratio: 20 / 15;
-    max-width: 90vw;
+    max-width: 95vw;
     max-height: 90dvh;
+    margin: 0 auto;
     overflow: hidden;
     display: flex;
     justify-content: center;
