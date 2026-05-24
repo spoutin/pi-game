@@ -31,10 +31,20 @@ Triage is performed using a "Collaborative" model:
      * Comment: "While this is a valid suggestion, it currently falls outside the scope of our project goals as defined in agent.md. Closing for now."
      * Command: `gh issue close <ID> -c "Closing per triage decision"`
 
-## Implementation Phase
-Once an issue is accepted, follow the standard development cycle:
+## Delivery Phase
+1. **Push:** Push the local branch to origin.
+2. **PR Creation:**
+   * Command: `gh pr create --body "Closes #ID" --label "ready-for-review"`
+   * Verify "Closes #ID" is in the body to ensure automatic closure of the issue.
+3. **CI Check:**
+   * Command: `gh pr checks`
+   * Monitor for failures. Attempt one round of automated fixes if trivial (linting).
 
-1. **Plan Review:** Present a concise implementation plan and wait for user approval.
-2. **Branching:** Create a branch `issue-<ID>-<short-description>`.
-3. **Execution:** Use `subagent-driven-development` or `executing-plans`.
-4. **Safety Verification:** Run `grep -riE "api_key|token|secret|password" .` on staged changes before committing.
+## Safety & Audit Trail
+* **Hard Boundary:** All commands MUST be relative to the project root. Absolute paths outside the project are forbidden.
+* **Secret Scanning:** REQUIRED before push: `grep -riE "api_key|token|secret|password" .` on staged changes.
+* **Audit Log:** Write every action to `docs/superpowers/automation-audit.log`.
+  * Format: `[YYYY-MM-DD HH:MM:SS] <ACTION> - <DETAILS>`
+* **Verification Gates:** 
+  * MUST get approval for implementation plan.
+  * MUST summarize file deletions/renames before PR creation.
