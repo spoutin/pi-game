@@ -426,7 +426,7 @@ function resizeCanvas() {
     canvas.width = newWidth; 
     canvas.height = newHeight; 
     cellSize = canvas.width / mazeCols;
-    joystickMaxDist = isSmallLandscape ? 30 : 40;
+    joystickMaxDist = isSmallLandscape ? 25 : 40;
 }
 
 function toggleMobileControls(show) {

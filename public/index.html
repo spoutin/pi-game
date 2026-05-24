@@ -82,6 +82,10 @@
                     <input type="text" id="playerName" placeholder="Enter Name" maxlength="20">
                     <button id="saveScoreBtn">Save Time</button>
                     <button id="restartBtn">Play Again</button>
+                    <div class="end-game-leaderboard">
+                        <h3>Fastest Escapes</h3>
+                        <ul id="leaderboard"></ul>
+                    </div>
                 </div>
 
                 <!-- Mobile Controls Overlay -->
@@ -110,11 +114,6 @@
                 <div class="hud-item"><span>PINGS:</span> <span id="pingCount">Unlimited</span></div>
                 <div class="hud-item"><span>TORPEDO:</span> <canvas id="torpedoUICanvas" width="40" height="15"></canvas></div>
             </div>
-        </div>
-        
-        <div class="score-board">
-            <h3>Fastest Escapes</h3>
-            <ul id="leaderboard"></ul>
         </div>
     </div>
     <script src="game.js"></script>
