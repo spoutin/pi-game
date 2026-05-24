@@ -12,13 +12,8 @@ body {
     width: 100vw;
 }
 .container {
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    justify-content: center;
     height: 100vh;
     width: 100vw;
-    padding: 0;
     box-sizing: border-box;
     overflow: hidden;
 }
@@ -53,6 +48,7 @@ canvas {
     text-align: center;
     padding: 20px;
     box-sizing: border-box;
+    z-index: 100;
 }
 .instructions {
     text-align: left;
@@ -89,7 +85,7 @@ canvas {
 }
 .mission-layer {
     background: rgba(0, 5, 0, 0.95);
-    z-index: 20;
+    z-index: 110;
 }
 .mission-briefing {
     border: 2px solid #4CAF50;
@@ -210,6 +206,11 @@ canvas {
     align-items: center;
     gap: 10px;
 }
+#torpedoUICanvas {
+    width: 8vmin;
+    height: auto;
+    image-rendering: pixelated;
+}
 .hidden { display: none !important; }
 .score-board {
     background-color: #0a0a1a;
@@ -243,7 +244,7 @@ input { padding: 10px; width: 80%; background: #000; color: #4CAF50; border: 1px
 /* Settings Menu */
 .settings-layer {
     background: rgba(0, 5, 10, 0.95);
-    z-index: 30;
+    z-index: 120;
 }
 .settings-box {
     border: 2px solid #3498db;
@@ -394,14 +395,14 @@ input { padding: 10px; width: 80%; background: #000; color: #4CAF50; border: 1px
 }
 
 @media (pointer: coarse) {
-    #mobile-controls {
+    #mobile-controls:not(.hidden) {
         display: flex !important;
     }
 }
 
 /* Portrait Orientation Overlay */
 @media (orientation: portrait) and (max-width: 1024px) {
-    #orientationOverlay {
+    #orientationOverlay:not(.hidden) {
         display: flex !important;
         z-index: 1000;
         background: #050510;
