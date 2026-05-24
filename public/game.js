@@ -156,9 +156,10 @@ let maze = [];
 
 function resizeCanvas() {
     // Calculate new dimensions
-    const padding = 20;
+    const isMobile = 'ontouchstart' in window || navigator.maxTouchPoints > 0;
+    const padding = isMobile ? 5 : 20;
     const availableWidth = window.innerWidth - padding * 2;
-    const availableHeight = window.innerHeight - 160; // Space for HUD and header
+    const availableHeight = window.innerHeight - (isMobile ? 100 : 160); // Less space needed on mobile for HUD
     
     // We want to maintain the aspect ratio of the maze (20:15 or 4:3)
     let newWidth = availableWidth;
@@ -169,8 +170,8 @@ function resizeCanvas() {
         newWidth = availableHeight * (mazeCols / mazeRows);
     }
     
-    // Cap at maximum size for desktop clarity if needed, or allow it to fill
-    if (newWidth > 1200) {
+    // Cap at maximum size for desktop clarity
+    if (!isMobile && newWidth > 1200) {
         newWidth = 1200;
         newHeight = 1200 * (mazeRows / mazeCols);
     }
@@ -181,10 +182,6 @@ function resizeCanvas() {
     
     // Calculate new cellSize
     cellSize = canvas.width / mazeCols;
-    
-    // If the game is already running, we might need to reposition objects?
-    // Since coordinates are calculated relative to cellSize, we should be okay
-    // if we redraw everything.
 }
 
 window.addEventListener('resize', resizeCanvas);
@@ -916,39 +913,80 @@ let isMouseDown = false;
 
 // Mobile Controls Setup
 const mobileControls = document.getElementById('mobile-controls');
-const btnUp = document.getElementById('btn-up');
-const btnDown = document.getElementById('btn-down');
-const btnLeft = document.getElementById('btn-left');
-const btnRight = document.getElementById('btn-right');
+const joystickContainer = document.getElementById('joystick-container');
+const joystickBase = document.getElementById('joystick-base');
+const joystickKnob = document.getElementById('joystick-knob');
 const btnPing = document.getElementById('btn-ping');
 const btnFire = document.getElementById('btn-fire');
 
-// Helper for mobile buttons
-function setupMobileBtn(btn, key) {
-    if (!btn) return;
-    btn.addEventListener('touchstart', (e) => {
-        e.preventDefault();
-        keys[key] = true;
-    });
-    btn.addEventListener('touchend', (e) => {
-        e.preventDefault();
-        keys[key] = false;
-    });
-    btn.addEventListener('mousedown', (e) => {
-        keys[key] = true;
-    });
-    btn.addEventListener('mouseup', (e) => {
-        keys[key] = false;
-    });
-    btn.addEventListener('mouseleave', (e) => {
-        keys[key] = false;
-    });
+let joystickActive = false;
+let joystickStartX = 0;
+let joystickStartY = 0;
+const joystickMaxDist = 40;
+
+function handleJoystick(e) {
+    if (!joystickActive) return;
+    e.preventDefault();
+    
+    const touch = e.touches ? e.touches[0] : e;
+    let dx = touch.clientX - joystickStartX;
+    let dy = touch.clientY - joystickStartY;
+    
+    const dist = Math.hypot(dx, dy);
+    if (dist > joystickMaxDist) {
+        const angle = Math.atan2(dy, dx);
+        dx = Math.cos(angle) * joystickMaxDist;
+        dy = Math.sin(angle) * joystickMaxDist;
+    }
+    
+    joystickKnob.style.transform = `translate(${dx}px, ${dy}px)`;
+    
+    // Convert to keys
+    const threshold = 0.3;
+    const nx = dx / joystickMaxDist;
+    const ny = dy / joystickMaxDist;
+    
+    keys.a = nx < -threshold;
+    keys.d = nx > threshold;
+    keys.w = ny < -threshold;
+    keys.s = ny > threshold;
 }
 
-setupMobileBtn(btnUp, 'w');
-setupMobileBtn(btnDown, 's');
-setupMobileBtn(btnLeft, 'a');
-setupMobileBtn(btnRight, 'd');
+joystickContainer.addEventListener('touchstart', (e) => {
+    const touch = e.touches[0];
+    joystickActive = true;
+    joystickStartX = touch.clientX;
+    joystickStartY = touch.clientY;
+    joystickKnob.style.transition = 'none';
+}, { passive: false });
+
+joystickContainer.addEventListener('touchmove', handleJoystick, { passive: false });
+
+const stopJoystick = () => {
+    joystickActive = false;
+    joystickKnob.style.transition = 'transform 0.2s ease-out';
+    joystickKnob.style.transform = 'translate(0, 0)';
+    keys.w = keys.a = keys.s = keys.d = false;
+};
+
+joystickContainer.addEventListener('touchend', stopJoystick);
+joystickContainer.addEventListener('touchcancel', stopJoystick);
+
+// Also support mouse for testing in dev tools
+joystickContainer.addEventListener('mousedown', (e) => {
+    joystickActive = true;
+    joystickStartX = e.clientX;
+    joystickStartY = e.clientY;
+    joystickKnob.style.transition = 'none';
+});
+
+window.addEventListener('mousemove', (e) => {
+    if (joystickActive) handleJoystick(e);
+});
+
+window.addEventListener('mouseup', () => {
+    if (joystickActive) stopJoystick();
+});
 
 if (btnPing) {
     btnPing.addEventListener('touchstart', (e) => {
@@ -959,7 +997,10 @@ if (btnPing) {
         e.preventDefault();
         keys.space = false;
     });
-    btnPing.addEventListener('mousedown', () => keys.space = true);
+    btnPing.addEventListener('mousedown', (e) => {
+        e.preventDefault();
+        keys.space = true;
+    });
     btnPing.addEventListener('mouseup', () => keys.space = false);
 }
 
@@ -968,7 +1009,10 @@ if (btnFire) {
         e.preventDefault();
         fireTorpedo();
     });
-    btnFire.addEventListener('mousedown', fireTorpedo);
+    btnFire.addEventListener('mousedown', (e) => {
+        e.preventDefault();
+        fireTorpedo();
+    });
 }
 
 // Show mobile controls if touch device is detected

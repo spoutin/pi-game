@@ -5,11 +5,18 @@ body {
     display: flex;
     justify-content: center;
     margin: 0;
-    padding: 20px;
+    padding: 0;
+    overflow: hidden; /* Prevent body scroll */
+    height: 100vh;
+    width: 100vw;
 }
 .container {
     display: flex;
     gap: 20px;
+    height: 100%;
+    width: 100%;
+    padding: 10px;
+    box-sizing: border-box;
 }
 h1, h2, h3 { margin-top: 0; color: #8bc34a; }
 .game-area {
@@ -137,35 +144,37 @@ input { padding: 10px; width: 80%; background: #000; color: #4CAF50; border: 1px
     pointer-events: none; /* Allow clicks to pass through container */
     z-index: 10;
 }
-#d-pad, #action-btns {
-    pointer-events: auto; /* Re-enable for buttons */
+#joystick-container, #action-btns {
+    pointer-events: auto; /* Re-enable for controls */
 }
-#d-pad {
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    gap: 5px;
-    opacity: 0.6; /* Semi-transparent overlay */
-}
-.d-pad-horizontal {
-    display: flex;
-    gap: 10px;
-}
-.ctrl-btn {
-    width: 50px;
-    height: 50px;
-    background: rgba(26, 90, 42, 0.5);
-    color: #4CAF50;
-    border: 2px solid rgba(76, 175, 80, 0.5);
-    border-radius: 50%;
-    font-size: 20px;
+#joystick-container {
+    width: 120px;
+    height: 120px;
     display: flex;
     align-items: center;
     justify-content: center;
-    cursor: pointer;
+    user-select: none;
+    touch-action: none;
 }
-.ctrl-btn:active {
-    background: rgba(46, 204, 113, 0.8);
+#joystick-base {
+    width: 100px;
+    height: 100px;
+    background: rgba(26, 90, 42, 0.3);
+    border: 2px solid rgba(76, 175, 80, 0.4);
+    border-radius: 50%;
+    position: relative;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+#joystick-knob {
+    width: 50px;
+    height: 50px;
+    background: rgba(46, 204, 113, 0.6);
+    border: 2px solid rgba(76, 175, 80, 0.8);
+    border-radius: 50%;
+    position: absolute;
+    transition: transform 0.1s ease-out;
 }
 #action-btns {
     display: flex;
