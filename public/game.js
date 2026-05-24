@@ -12,7 +12,7 @@ const pingCountEl = document.getElementById('pingCount');
 const difficultyRadios = document.getElementsByName('difficulty');
 
 let gameState = 'start';
-let player = { x: 50, y: 50, vx: 0, vy: 0, radius: 8, invulnTimer: 0 };
+let player = { x: 50, y: 50, vx: 0, vy: 0, radius: 10, invulnTimer: 0, angle: 0 };
 let keys = { w: false, a: false, s: false, d: false, space: false };
 let pings = [];
 let mines = [];
@@ -160,7 +160,7 @@ function initGame() {
     else if (difficulty === 'medium') freePings = 25;
     else if (difficulty === 'hard') freePings = 10;
     
-    player = { x: 60, y: 60, vx: 0, vy: 0, radius: 8, invulnTimer: 0 };
+    player = { x: 60, y: 60, vx: 0, vy: 0, radius: 10, invulnTimer: 0, angle: 0 };
     pings = [];
     pingsUsed = 0;
     mineHits = 0;
@@ -240,6 +240,10 @@ function handlePhysics(dt, time) {
     player.vx *= friction;
     player.vy *= friction;
 
+    if (Math.abs(player.vx) > 0.1 || Math.abs(player.vy) > 0.1) {
+        player.angle = Math.atan2(player.vy, player.vx);
+    }
+
     let newX = player.x + player.vx * dt;
     let newY = player.y + player.vy * dt;
 
@@ -300,16 +304,35 @@ function drawScene() {
     ctx.fillStyle = '#000';
     ctx.fillRect(0, 0, canvas.width, canvas.height);
 
-    // Draw player
+    // Draw player (submarine)
+    ctx.save();
+    ctx.translate(player.x, player.y);
+    ctx.rotate(player.angle);
+    
     if (player.invulnTimer > 0) {
         // Flash if invulnerable
         ctx.fillStyle = Math.floor(Date.now() / 100) % 2 === 0 ? '#4CAF50' : '#ff0000';
     } else {
         ctx.fillStyle = '#4CAF50';
     }
+    
+    // Submarine body (ellipse-like)
     ctx.beginPath();
-    ctx.arc(player.x, player.y, player.radius, 0, Math.PI * 2);
+    ctx.ellipse(0, 0, player.radius * 1.5, player.radius, 0, 0, Math.PI * 2);
     ctx.fill();
+    
+    // Submarine tail fin
+    ctx.beginPath();
+    ctx.moveTo(-player.radius * 1.5, 0);
+    ctx.lineTo(-player.radius * 2, -player.radius * 0.8);
+    ctx.lineTo(-player.radius * 2, player.radius * 0.8);
+    ctx.fill();
+    
+    // Submarine periscope
+    ctx.fillRect(0, -player.radius * 1.5, player.radius * 0.4, player.radius);
+    ctx.fillRect(0, -player.radius * 1.5, player.radius * 0.8, player.radius * 0.3);
+    
+    ctx.restore();
 
     // Draw Map Based on Ping Proximity
     for (let r = 0; r < maze.length; r++) {
@@ -347,16 +370,35 @@ function drawScene() {
                         let sGreen = Math.min(255, bNormal * 255);
                         let sBlue = Math.min(255, bNormal * 255);
                         ctx.strokeStyle = `rgba(${sRed}, ${sGreen}, ${sBlue}, ${Math.max(bNormal, bMine)})`;
+                        
+                        ctx.lineWidth = 2;
+                        ctx.fillRect(c * cellSize, r * cellSize, cellSize, cellSize);
+                        ctx.strokeRect(c * cellSize, r * cellSize, cellSize, cellSize);
                     } else if (type === 2) {
-                        // Goal always looks golden
+                        // Treasure Chest
                         let b = Math.max(bNormal, bMine);
-                        ctx.fillStyle = `rgba(255, 215, 0, ${b})`;
-                        ctx.strokeStyle = `rgba(255, 255, 255, ${b})`;
+                        
+                        // Chest base
+                        ctx.fillStyle = `rgba(139, 69, 19, ${b})`; // SaddleBrown
+                        ctx.fillRect(c * cellSize + 5, r * cellSize + 15, cellSize - 10, cellSize - 20);
+                        
+                        // Chest lid
+                        ctx.beginPath();
+                        ctx.arc(c * cellSize + cellSize / 2, r * cellSize + 15, (cellSize - 10) / 2, Math.PI, 0);
+                        ctx.fill();
+                        
+                        // Gold trims
+                        ctx.strokeStyle = `rgba(255, 215, 0, ${b})`;
+                        ctx.lineWidth = 2;
+                        ctx.strokeRect(c * cellSize + 5, r * cellSize + 15, cellSize - 10, cellSize - 20);
+                        ctx.beginPath();
+                        ctx.arc(c * cellSize + cellSize / 2, r * cellSize + 15, (cellSize - 10) / 2, Math.PI, 0);
+                        ctx.stroke();
+                        
+                        // Lock
+                        ctx.fillStyle = `rgba(218, 165, 32, ${b})`; // GoldenRod
+                        ctx.fillRect(c * cellSize + cellSize / 2 - 3, r * cellSize + 12, 6, 8);
                     }
-                    
-                    ctx.lineWidth = 2;
-                    ctx.fillRect(c * cellSize, r * cellSize, cellSize, cellSize);
-                    ctx.strokeRect(c * cellSize, r * cellSize, cellSize, cellSize);
                 }
             }
         }
