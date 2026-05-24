@@ -53,48 +53,44 @@ canvas {
     display: flex;
     flex-direction: column;
     align-items: center;
-    justify-content: center; /* Center strictly */
+    justify-content: flex-start; /* Start from top to allow scrolling if needed */
     gap: 1.5vmin;
     background: rgba(0,0,0,0.85);
     text-align: center;
     padding: 2vmin;
     z-index: 100;
-    font-size: clamp(12px, 2vmin, 20px);
-    overflow: hidden; /* Prevent internal scroll, force content to fit */
+    font-size: clamp(12px, 1.8vmin, 18px); /* Slightly smaller base font */
+    overflow-y: auto; /* Re-enable as safety net */
 }
 
-/* Vertical centering trick removal - keep it simple */
-.ui-layer::before, .ui-layer::after, .overlay::before, .overlay::after {
-    display: none;
-}
-
-.ui-layer > *, .overlay > * {
-    flex-shrink: 0; /* Prevent children from squishing */
-}
-
-/* Vertical centering with scroll support */
+/* Vertical centering that preserves top content if overflow occurs */
 .ui-layer::before, .ui-layer::after, .overlay::before, .overlay::after {
     content: '';
     margin: auto;
+    display: block;
+}
+
+.ui-layer > *, .overlay > * {
+    flex-shrink: 0;
 }
 .ui-layer h1 {
-    font-size: 6vmin;
-    margin-bottom: 1vmin;
+    font-size: 5vmin; /* Further reduced from 6vmin */
+    margin-bottom: 0.5vmin;
 }
 .ui-layer button {
-    font-size: 4vmin;
-    padding: 2vmin 4vmin;
-    margin: 1vmin;
+    font-size: 3vmin; /* Further reduced from 4vmin */
+    padding: 1vmin 2vmin; /* More compact */
+    margin: 0.5vmin;
 }
 .instructions {
     text-align: left;
     width: 95%;
-    max-width: 600px;
+    max-width: 500px; /* Reduced from 600px */
     background: rgba(0, 20, 0, 0.7);
     padding: 1.5vmin;
     border: 1px solid #4CAF50;
     border-radius: 1vmin;
-    font-size: clamp(10px, 1.5vmin, 15px);
+    font-size: clamp(10px, 1.4vmin, 14px); /* Slightly smaller instructions */
     box-shadow: inset 0 0 2vmin #0a3a1a;
 }
 
@@ -183,12 +179,12 @@ canvas {
     font-size: 1.8vmin;
 }
 
-@media (max-height: 500px) {
+@media (max-height: 600px) {
     .ui-layer h1 {
-        display: none; /* Hide title on small landscape to save space */
+        display: none; /* Hide title on short screens (mobile AND desktop) to save space */
     }
     .instructions {
-        display: none; /* Hide instructions on very short screens to prevent scrolling */
+        display: none; /* Hide instructions on short screens to prevent scrolling */
     }
     .difficulty-select {
         display: flex;
@@ -205,16 +201,8 @@ canvas {
     }
     .ui-layer button {
         font-size: 3vmin;
-        padding: 1.5vmin 3vmin;
+        padding: 1vmin 2vmin;
         margin: 0.5vmin;
-    }
-}
-    .difficulty-select label {
-        margin-bottom: 0;
-        font-size: 1.6vmin;
-    }
-    .penalty-text {
-        display: none; /* Hide to save space on very short screens */
     }
 }
 .difficulty-select label:last-child {
