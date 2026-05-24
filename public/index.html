@@ -32,6 +32,31 @@
                     </div>
                     <p class="penalty-text">Medium/Hard: +3s penalty per extra ping used.</p>
                     <button id="startBtn">Start Mission</button>
+                    <button id="settingsBtn" class="secondary-btn">Audio Settings</button>
+                </div>
+
+                <div id="settingsOverlay" class="hidden overlay settings-layer">
+                    <div class="settings-box">
+                        <h2>Audio Settings</h2>
+                        
+                        <div class="setting-item">
+                            <label>Music</label>
+                            <div class="setting-controls">
+                                <input type="checkbox" id="musicToggle" checked>
+                                <input type="range" id="musicVolume" min="0" max="1" step="0.01" value="0.5">
+                            </div>
+                        </div>
+
+                        <div class="setting-item">
+                            <label>Sound Effects</label>
+                            <div class="setting-controls">
+                                <input type="checkbox" id="sfxToggle" checked>
+                                <input type="range" id="sfxVolume" min="0" max="1" step="0.01" value="0.5">
+                            </div>
+                        </div>
+
+                        <button id="closeSettingsBtn">Back to Menu</button>
+                    </div>
                 </div>
 
                 <div id="missionOverlay" class="hidden overlay mission-layer">
