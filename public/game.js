@@ -58,9 +58,11 @@ let penaltyPerMine = 10;
 let finalTotalScore = 0;
 
 // Maze dimensions
-let cellSize = 40;
-const mazeCols = 20;
-const mazeRows = 15;
+let cellSize = 50;
+const worldCols = 60;
+const worldRows = 60;
+const viewCols = 20;
+const viewRows = 15;
 let maze = [];
 
 // Audio State
