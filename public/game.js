@@ -9,7 +9,6 @@ const playerNameInput = document.getElementById('playerName');
 const leaderboardEl = document.getElementById('leaderboard');
 const currentTimeEl = document.getElementById('currentTime');
 const pingCountEl = document.getElementById('pingCount');
-const torpedoCountEl = document.getElementById('torpedoCount');
 const difficultyRadios = document.getElementsByName('difficulty');
 
 let gameState = 'start';
@@ -133,7 +132,9 @@ function playTorpedoSound() {
 }
 
 // Simple Maze (1: wall, 0: open, 2: goal, 3: mine spawn)
-const cellSize = 40;
+let cellSize = 40;
+const mazeCols = 20;
+const mazeRows = 15;
 const rawMaze = [
     [0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0],
     [0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0],
@@ -153,8 +154,45 @@ const rawMaze = [
 ];
 let maze = [];
 
+function resizeCanvas() {
+    // Calculate new dimensions
+    const padding = 20;
+    const availableWidth = window.innerWidth - padding * 2;
+    const availableHeight = window.innerHeight - 160; // Space for HUD and header
+    
+    // We want to maintain the aspect ratio of the maze (20:15 or 4:3)
+    let newWidth = availableWidth;
+    let newHeight = availableWidth * (mazeRows / mazeCols);
+    
+    if (newHeight > availableHeight) {
+        newHeight = availableHeight;
+        newWidth = availableHeight * (mazeCols / mazeRows);
+    }
+    
+    // Cap at maximum size for desktop clarity if needed, or allow it to fill
+    if (newWidth > 1200) {
+        newWidth = 1200;
+        newHeight = 1200 * (mazeRows / mazeCols);
+    }
+
+    // Set canvas internal resolution
+    canvas.width = newWidth;
+    canvas.height = newHeight;
+    
+    // Calculate new cellSize
+    cellSize = canvas.width / mazeCols;
+    
+    // If the game is already running, we might need to reposition objects?
+    // Since coordinates are calculated relative to cellSize, we should be okay
+    // if we redraw everything.
+}
+
+window.addEventListener('resize', resizeCanvas);
+resizeCanvas();
+
 function initGame() {
     initAudio();
+    resizeCanvas(); // Ensure correct size before starting
     
     // Parse map and spawn mines
     maze = JSON.parse(JSON.stringify(rawMaze));
@@ -165,7 +203,7 @@ function initGame() {
                 mines.push({
                     x: c * cellSize + cellSize/2,
                     y: r * cellSize + cellSize/2,
-                    radius: 12,
+                    radius: cellSize * 0.3,
                     timer: Math.random() * 3 + 2 // 2 to 5 seconds
                 });
                 maze[r][c] = 0; // Clear it so it behaves like open water
@@ -185,7 +223,8 @@ function initGame() {
     else if (difficulty === 'medium') { freePings = 25; torpedoReloadTime = 30; }
     else if (difficulty === 'hard') { freePings = 10; torpedoReloadTime = 60; }
     
-    player = { x: 60, y: 140, vx: 0, vy: 0, radius: 10, invulnTimer: 0, angle: 0 };
+    // Start at a relative position (1.5 cells in, 3.5 cells down)
+    player = { x: cellSize * 1.5, y: cellSize * 3.5, vx: 0, vy: 0, radius: cellSize * 0.25, invulnTimer: 0, angle: 0 };
     pings = [];
     wakes = [];
     torpedoes = [];
@@ -270,7 +309,7 @@ function getCell(x, y) {
 }
 
 function handlePhysics(dt, time) {
-    const accel = 800;
+    const accel = cellSize * 20;
     const friction = 0.85;
     let hitWall = false;
 
@@ -290,9 +329,9 @@ function handlePhysics(dt, time) {
             let backX = player.x - Math.cos(player.angle) * player.radius * 2;
             let backY = player.y - Math.sin(player.angle) * player.radius * 2;
             wakes.push({
-                x: backX + (Math.random() - 0.5) * 8,
-                y: backY + (Math.random() - 0.5) * 8,
-                radius: Math.random() * 3 + 1.5,
+                x: backX + (Math.random() - 0.5) * (cellSize * 0.2),
+                y: backY + (Math.random() - 0.5) * (cellSize * 0.2),
+                radius: Math.random() * (cellSize * 0.08) + (cellSize * 0.04),
                 opacity: 0.8,
                 life: 1.0
             });
@@ -303,7 +342,7 @@ function handlePhysics(dt, time) {
     for (let i = wakes.length - 1; i >= 0; i--) {
         wakes[i].life -= dt;
         wakes[i].opacity = wakes[i].life * 0.8;
-        wakes[i].radius += dt * 2; // bubbles slightly expand
+        wakes[i].radius += dt * (cellSize * 0.05); // bubbles slightly expand
         if (wakes[i].life <= 0) {
             wakes.splice(i, 1);
         }
@@ -318,9 +357,9 @@ function handlePhysics(dt, time) {
         // Add torpedo wake
         if (Math.random() < 0.6) {
             wakes.push({
-                x: t.x - Math.cos(t.angle) * 5 + (Math.random() - 0.5) * 4,
-                y: t.y - Math.sin(t.angle) * 5 + (Math.random() - 0.5) * 4,
-                radius: Math.random() * 2 + 1,
+                x: t.x - Math.cos(t.angle) * (cellSize * 0.12) + (Math.random() - 0.5) * (cellSize * 0.1),
+                y: t.y - Math.sin(t.angle) * (cellSize * 0.12) + (Math.random() - 0.5) * (cellSize * 0.1),
+                radius: Math.random() * (cellSize * 0.05) + (cellSize * 0.025),
                 opacity: 0.8,
                 life: 0.5
             });
@@ -339,7 +378,7 @@ function handlePhysics(dt, time) {
         for (let j = mines.length - 1; j >= 0; j--) {
             let m = mines[j];
             let dist = Math.hypot(t.x - m.x, t.y - m.y);
-            if (dist < m.radius + 5) { // 5 is approx torpedo radius
+            if (dist < m.radius + cellSize * 0.12) {
                 // Destroy Mine and Torpedo
                 mines.splice(j, 1);
                 torpedoes.splice(i, 1);
@@ -356,10 +395,10 @@ function handlePhysics(dt, time) {
     if (Math.random() < 0.01 && surfaceShips.length < 2) {
         // Spawn a new ship
         surfaceShips.push({
-            x: Math.random() < 0.5 ? -50 : canvas.width + 50,
-            y: 30, // near surface
+            x: Math.random() < 0.5 ? -cellSize * 1.2 : canvas.width + cellSize * 1.2,
+            y: cellSize * 0.75, // near surface
             vx: 0,
-            speed: Math.random() * 50 + 50,
+            speed: Math.random() * (cellSize * 1.25) + (cellSize * 1.25),
             direction: 0,
             dropTimer: 0
         });
@@ -373,12 +412,12 @@ function handlePhysics(dt, time) {
         ship.x += ship.vx * dt;
         
         // Drop depth charge if roughly above player
-        if (Math.abs(ship.x - player.x) < 50 && ship.dropTimer <= 0) {
+        if (Math.abs(ship.x - player.x) < cellSize * 1.25 && ship.dropTimer <= 0) {
             depthCharges.push({
                 x: ship.x,
-                y: ship.y + 10,
-                vy: 80, // falls down
-                radius: 6,
+                y: ship.y + cellSize * 0.25,
+                vy: cellSize * 2.0, // falls down
+                radius: cellSize * 0.15,
                 active: true
             });
             ship.dropTimer = 2.0; // cooldown
@@ -386,8 +425,8 @@ function handlePhysics(dt, time) {
         if (ship.dropTimer > 0) ship.dropTimer -= dt;
         
         // Remove if off screen
-        if ((ship.direction === 1 && ship.x > canvas.width + 100) || 
-            (ship.direction === -1 && ship.x < -100)) {
+        if ((ship.direction === 1 && ship.x > canvas.width + cellSize * 2.5) || 
+            (ship.direction === -1 && ship.x < -cellSize * 2.5)) {
             surfaceShips.splice(i, 1);
         }
     }
@@ -416,8 +455,8 @@ function handlePhysics(dt, time) {
                 
                 // Bounce back
                 let angle = Math.atan2(player.y - dc.y, player.x - dc.x);
-                player.vx = Math.cos(angle) * 500;
-                player.vy = Math.sin(angle) * 500;
+                player.vx = Math.cos(angle) * (cellSize * 12.5);
+                player.vy = Math.sin(angle) * (cellSize * 12.5);
                 
                 pings.push({ x: dc.x, y: dc.y, radius: 0, opacity: 1, type: 'mine' });
                 depthCharges.splice(i, 1);
@@ -475,8 +514,8 @@ function handlePhysics(dt, time) {
                 
                 // Bounce back
                 let angle = Math.atan2(player.y - m.y, player.x - m.x);
-                player.vx = Math.cos(angle) * 500;
-                player.vy = Math.sin(angle) * 500;
+                player.vx = Math.cos(angle) * (cellSize * 12.5);
+                player.vy = Math.sin(angle) * (cellSize * 12.5);
                 
                 if (currentHealth <= 0) {
                     endGame(false);
@@ -497,18 +536,19 @@ function drawScene() {
     ctx.fillRect(0, 0, canvas.width, canvas.height);
 
     // Draw Surface Water (Gradient)
-    let gradient = ctx.createLinearGradient(0, 0, 0, 100);
+    const surfaceDepth = cellSize * 2.5;
+    let gradient = ctx.createLinearGradient(0, 0, 0, surfaceDepth);
     gradient.addColorStop(0, 'rgba(0, 50, 100, 0.4)');
     gradient.addColorStop(1, 'rgba(0, 50, 100, 0)');
     ctx.fillStyle = gradient;
-    ctx.fillRect(0, 0, canvas.width, 100);
+    ctx.fillRect(0, 0, canvas.width, surfaceDepth);
     
     // Wavy Surface Line
     ctx.strokeStyle = 'rgba(100, 200, 255, 0.3)';
     ctx.lineWidth = 2;
     ctx.beginPath();
     for (let x = 0; x <= canvas.width; x += 10) {
-        let y = 30 + Math.sin(x * 0.05 + Date.now() * 0.002) * 5;
+        let y = (cellSize * 0.75) + Math.sin(x * 0.05 + Date.now() * 0.002) * 5;
         if (x === 0) ctx.moveTo(x, y);
         else ctx.lineTo(x, y);
     }
@@ -527,14 +567,16 @@ function drawScene() {
         ctx.fillStyle = '#888';
         ctx.beginPath();
         // Ship hull
-        ctx.moveTo(s.x - 30 * s.direction, s.y);
-        ctx.lineTo(s.x + 20 * s.direction, s.y);
-        ctx.lineTo(s.x + 30 * s.direction, s.y - 15);
-        ctx.lineTo(s.x - 20 * s.direction, s.y - 15);
+        const sw = cellSize * 0.75;
+        const sh = cellSize * 0.375;
+        ctx.moveTo(s.x - sw * s.direction, s.y);
+        ctx.lineTo(s.x + sw * 0.66 * s.direction, s.y);
+        ctx.lineTo(s.x + sw * s.direction, s.y - sh);
+        ctx.lineTo(s.x - sw * 0.66 * s.direction, s.y - sh);
         ctx.fill();
         // Ship cabin
         ctx.fillStyle = '#666';
-        ctx.fillRect(s.x - 10, s.y - 25, 20, 10);
+        ctx.fillRect(s.x - cellSize * 0.25, s.y - cellSize * 0.625, cellSize * 0.5, cellSize * 0.25);
     }
     
     // Draw Depth Charges
@@ -546,7 +588,7 @@ function drawScene() {
         // Little light on it
         ctx.fillStyle = '#ff0000';
         ctx.beginPath();
-        ctx.arc(dc.x, dc.y - 2, 2, 0, Math.PI * 2);
+        ctx.arc(dc.x, dc.y - dc.radius * 0.3, dc.radius * 0.3, 0, Math.PI * 2);
         ctx.fill();
     }
 
@@ -558,11 +600,11 @@ function drawScene() {
         
         ctx.fillStyle = '#ff3333';
         ctx.beginPath();
-        ctx.ellipse(0, 0, 8, 3, 0, 0, Math.PI * 2);
+        ctx.ellipse(0, 0, cellSize * 0.2, cellSize * 0.075, 0, 0, Math.PI * 2);
         ctx.fill();
         
         ctx.fillStyle = '#555';
-        ctx.fillRect(-8, -4, 4, 8); // tail
+        ctx.fillRect(-cellSize * 0.2, -cellSize * 0.1, cellSize * 0.1, cellSize * 0.2); // tail
         
         ctx.restore();
     }
@@ -775,31 +817,34 @@ function drawTorpedoUI() {
     
     // Draw outline
     torpedoUICtx.strokeStyle = torpedoTimer <= 0 ? '#4CAF50' : '#ff3333';
-    torpedoUICtx.lineWidth = 1;
+    torpedoUICtx.lineWidth = 2;
     torpedoUICtx.beginPath();
-    torpedoUICtx.ellipse(20, 7.5, 15, 5, 0, 0, Math.PI * 2);
+    torpedoUICtx.ellipse(20, 7.5, 12, 4, 0, 0, Math.PI * 2);
     torpedoUICtx.stroke();
-    torpedoUICtx.fillStyle = '#555';
-    torpedoUICtx.fillRect(1, 4.5, 6, 6);
+    
+    // Tail fin outline
+    torpedoUICtx.strokeRect(3, 5.5, 5, 4);
     
     // Draw fill based on reload progress
     if (torpedoTimer <= 0) {
         torpedoUICtx.fillStyle = '#4CAF50';
         torpedoUICtx.beginPath();
-        torpedoUICtx.ellipse(20, 7.5, 15, 5, 0, 0, Math.PI * 2);
+        torpedoUICtx.ellipse(20, 7.5, 12, 4, 0, 0, Math.PI * 2);
         torpedoUICtx.fill();
+        torpedoUICtx.fillRect(3, 5.5, 5, 4);
     } else {
         let progress = 1.0 - (torpedoTimer / torpedoReloadTime);
         torpedoUICtx.fillStyle = '#ff3333';
         
         torpedoUICtx.save();
         torpedoUICtx.beginPath();
-        torpedoUICtx.rect(5, 0, 30 * progress, 15);
+        torpedoUICtx.rect(0, 0, 40 * progress, 15);
         torpedoUICtx.clip();
         
         torpedoUICtx.beginPath();
-        torpedoUICtx.ellipse(20, 7.5, 15, 5, 0, 0, Math.PI * 2);
+        torpedoUICtx.ellipse(20, 7.5, 12, 4, 0, 0, Math.PI * 2);
         torpedoUICtx.fill();
+        torpedoUICtx.fillRect(3, 5.5, 5, 4);
         torpedoUICtx.restore();
     }
 }
@@ -953,7 +998,7 @@ function fireTorpedo() {
             x: player.x + Math.cos(player.angle) * player.radius * 2,
             y: player.y + Math.sin(player.angle) * player.radius * 2,
             angle: player.angle,
-            speed: 300
+            speed: cellSize * 7.5
         });
         torpedoTimer = torpedoReloadTime;
         playTorpedoSound();

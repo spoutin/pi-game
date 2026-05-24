@@ -126,68 +126,77 @@ input { padding: 10px; width: 80%; background: #000; color: #4CAF50; border: 1px
 
 /* Mobile Controls */
 #mobile-controls {
-    display: flex;
-    justify-content: space-around;
-    align-items: center;
-    padding: 10px;
-    background: #0a0a1a;
-    border: 2px solid #333;
-    user-select: none;
-    touch-action: none;
+    position: absolute;
+    bottom: 20px;
+    left: 0;
+    right: 0;
+    display: none; /* Changed from flex to none by default, JS will show it */
+    justify-content: space-between;
+    align-items: flex-end;
+    padding: 0 20px;
+    pointer-events: none; /* Allow clicks to pass through container */
+    z-index: 10;
+}
+#d-pad, #action-btns {
+    pointer-events: auto; /* Re-enable for buttons */
 }
 #d-pad {
     display: flex;
     flex-direction: column;
     align-items: center;
     gap: 5px;
+    opacity: 0.6; /* Semi-transparent overlay */
 }
 .d-pad-horizontal {
     display: flex;
-    gap: 20px;
+    gap: 10px;
 }
 .ctrl-btn {
-    width: 60px;
-    height: 60px;
-    background: #1a5a2a;
+    width: 50px;
+    height: 50px;
+    background: rgba(26, 90, 42, 0.5);
     color: #4CAF50;
-    border: 2px solid #4CAF50;
+    border: 2px solid rgba(76, 175, 80, 0.5);
     border-radius: 50%;
-    font-size: 24px;
+    font-size: 20px;
     display: flex;
     align-items: center;
     justify-content: center;
     cursor: pointer;
 }
 .ctrl-btn:active {
-    background: #2ecc71;
+    background: rgba(46, 204, 113, 0.8);
 }
 #action-btns {
     display: flex;
     flex-direction: column;
     gap: 10px;
+    opacity: 0.6;
 }
 .action-btn {
-    width: 100px;
-    padding: 15px;
-    background: #0a3a1a;
+    width: 80px;
+    padding: 10px;
+    background: rgba(10, 58, 26, 0.5);
     color: #4CAF50;
-    border: 2px solid #4CAF50;
+    border: 2px solid rgba(76, 175, 80, 0.5);
     font-weight: bold;
     cursor: pointer;
     border-radius: 8px;
+    font-size: 14px;
 }
 .action-btn:active {
-    background: #2ecc71;
+    background: rgba(46, 204, 113, 0.8);
 }
 
 @media (max-width: 1000px) {
     .container {
         flex-direction: column;
         align-items: center;
+        padding: 5px;
     }
     .score-board {
-        width: 800px;
-        max-width: 95%;
+        width: 100%;
+        max-width: 800px;
     }
 }
 
