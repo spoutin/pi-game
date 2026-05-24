@@ -1,0 +1,3 @@
+{"type":"server-started","port":56658,"host":"127.0.0.1","url_host":"localhost","url":"http://localhost:56658","screen_dir":"/Users/ablack/repos/ai-game/.superpowers/brainstorm/74682-1779647440/content","state_dir":"/Users/ablack/repos/ai-game/.superpowers/brainstorm/74682-1779647440/state"}
+{"type":"screen-added","file":"/Users/ablack/repos/ai-game/.superpowers/brainstorm/74682-1779647440/content/scaling-options.html"}
+{"type":"server-stopped","reason":"idle timeout"}

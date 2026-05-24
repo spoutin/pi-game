@@ -22,12 +22,12 @@ Enable the game to fill 100% of the available screen space on any device (deskto
   - Change `mazeCols` and `mazeRows` from constants to variables.
   - In `initGame`, calculate the initial grid size based on the current window size.
 - **Resize Handling:**
-  - Update `resizeCanvas()` to recalculate the visible `mazeCols` and `mazeRows` when the window is resized.
-  - The maze data itself will be generated to be large enough to cover the maximum possible screen size (e.g., 50x50) to avoid mid-game regeneration issues.
-  - The game will "view" a centered portion of this larger grid.
-  - On smaller screens, the view will be tighter; on larger screens, more of the maze will be visible.
+  - Update `resizeCanvas()` to recalculate the visible `viewCols` and `viewRows` when the window is resized.
+  - The maze data itself is generated at 60x60 cells to cover all standard screen sizes.
+  - The game uses a centered camera viewport that follows the player.
+  - Spatial culling is used in the rendering loop to only draw visible cells, optimizing performance for the larger grid.
 - **Entity Normalization:**
-  - Entity positions will be updated relative to the new pixel-to-grid mapping.
+  - Entity positions use absolute world coordinates; since `cellSize` is fixed (50px), they remain stable during resizing without needing manual recalculation.
 
 ### 3. UI/UX
 - Keep the Tactical HUD in the corners using `position: absolute`.

@@ -1,0 +1,33 @@
+<h2>Mobile Orientation Strategy</h2>
+<p class="subtitle">The maze aspect ratio (20:15) is naturally landscape. How should we handle mobile portrait mode?</p>
+
+<div class="options">
+  <div class="option" data-choice="force-landscape" onclick="toggleSelect(this)">
+    <div class="letter">A</div>
+    <div class="content">
+      <h3>Force Landscape (Recommended)</h3>
+      <p>Show a "Rotate Device" overlay when in portrait. Ensures the maze and controls have enough room.</p>
+      <div class="mockup" style="margin-top:10px; height:100px; display:flex; align-items:center; justify-content:center;">
+        <div style="transform:rotate(90deg); border:1px solid #4CAF50; padding:10px;">📱 Rotate to Play</div>
+      </div>
+    </div>
+  </div>
+  
+  <div class="option" data-choice="adaptive-portrait" onclick="toggleSelect(this)">
+    <div class="letter">B</div>
+    <div class="content">
+      <h3>Adaptive Portrait Support</h3>
+      <p>Stack the HUD and controls vertically. The maze will be smaller, but the game remains playable without rotation.</p>
+      <div class="mockup" style="margin-top:10px; height:100px; display:flex; flex-direction:column; align-items:center; gap:5px; border:1px solid #4CAF50; padding:5px;">
+        <div style="background:#222; width:100%; height:15px; font-size:8px;">HUD</div>
+        <div style="background:#111; width:100%; height:40px; border:1px solid #333;">MAZE</div>
+        <div style="background:#222; width:100%; height:25px; font-size:8px;">CONTROLS</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="section">
+  <h3>Additional Improvement: Scaling</h3>
+  <p>Regardless of the choice, I'll implement <strong>Viewport-Unit based scaling</strong> so the UI and Map automatically resize to fill the available screen while maintaining the maze's aspect ratio.</p>
+</div>
