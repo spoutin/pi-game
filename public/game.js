@@ -12,9 +12,11 @@ const pingCountEl = document.getElementById('pingCount');
 const difficultyRadios = document.getElementsByName('difficulty');
 
 let gameState = 'start';
-let player = { x: 50, y: 50, vx: 0, vy: 0, radius: 8 };
+let player = { x: 50, y: 50, vx: 0, vy: 0, radius: 8, invulnTimer: 0 };
 let keys = { w: false, a: false, s: false, d: false, space: false };
 let pings = [];
+let mines = [];
+let mineHits = 0;
 let startTime = 0;
 let timeElapsed = 0;
 let lastFrame = performance.now();
@@ -24,6 +26,7 @@ let difficulty = 'easy';
 let freePings = -1; // -1 means unlimited
 let pingsUsed = 0;
 let penaltyPerPing = 3;
+let penaltyPerMine = 10;
 let finalTotalScore = 0;
 
 // Audio Context
@@ -35,19 +38,27 @@ function initAudio() {
     if (audioCtx.state === 'suspended') audioCtx.resume();
 }
 
-function playPingSound() {
+function playPingSound(isMine = false) {
     if (!audioCtx) return;
     let osc = audioCtx.createOscillator();
     let gain = audioCtx.createGain();
     osc.connect(gain);
     gain.connect(audioCtx.destination);
-    osc.type = 'sine';
-    osc.frequency.setValueAtTime(800, audioCtx.currentTime);
-    osc.frequency.exponentialRampToValueAtTime(300, audioCtx.currentTime + 0.3);
+    
+    if (isMine) {
+        osc.type = 'sawtooth';
+        osc.frequency.setValueAtTime(300, audioCtx.currentTime);
+        osc.frequency.exponentialRampToValueAtTime(150, audioCtx.currentTime + 0.4);
+    } else {
+        osc.type = 'sine';
+        osc.frequency.setValueAtTime(800, audioCtx.currentTime);
+        osc.frequency.exponentialRampToValueAtTime(300, audioCtx.currentTime + 0.3);
+    }
+    
     gain.gain.setValueAtTime(0.3, audioCtx.currentTime);
     gain.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + 0.3);
     osc.start();
-    osc.stop(audioCtx.currentTime + 0.3);
+    osc.stop(audioCtx.currentTime + 0.4);
 }
 
 function playBumpSound() {
@@ -63,6 +74,21 @@ function playBumpSound() {
     gain.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + 0.1);
     osc.start();
     osc.stop(audioCtx.currentTime + 0.1);
+}
+
+function playExplosionSound() {
+    if (!audioCtx) return;
+    let osc = audioCtx.createOscillator();
+    let gain = audioCtx.createGain();
+    osc.connect(gain);
+    gain.connect(audioCtx.destination);
+    osc.type = 'square';
+    osc.frequency.setValueAtTime(100, audioCtx.currentTime);
+    osc.frequency.exponentialRampToValueAtTime(20, audioCtx.currentTime + 0.5);
+    gain.gain.setValueAtTime(0.5, audioCtx.currentTime);
+    gain.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + 0.5);
+    osc.start();
+    osc.stop(audioCtx.currentTime + 0.5);
 }
 
 function playWinSound() {
@@ -83,26 +109,44 @@ function playWinSound() {
     });
 }
 
-// Simple Maze (1: wall, 0: open, 2: goal)
+// Simple Maze (1: wall, 0: open, 2: goal, 3: mine spawn)
 const cellSize = 40;
-const maze = [
+const rawMaze = [
     [1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1],
-    [1,0,0,0,1,0,0,0,0,0,1,0,0,0,1,0,0,0,2,1],
+    [1,0,0,0,1,0,0,0,0,0,1,0,0,3,1,0,0,0,2,1],
     [1,0,1,0,1,0,1,1,1,0,1,0,1,0,1,0,1,1,0,1],
-    [1,0,1,0,0,0,1,0,0,0,0,0,1,0,0,0,1,0,0,1],
+    [1,0,1,0,3,0,1,0,0,0,0,0,1,0,0,0,1,0,0,1],
     [1,0,1,1,1,1,1,0,1,1,1,1,1,1,1,0,1,1,1,1],
-    [1,0,0,0,0,0,0,0,0,0,0,0,0,0,1,0,0,0,0,1],
+    [1,0,0,0,0,0,0,0,0,0,3,0,0,0,1,0,0,3,0,1],
     [1,1,1,1,1,0,1,1,1,1,1,1,1,0,1,1,1,1,0,1],
-    [1,0,0,0,1,0,1,0,0,0,0,0,1,0,0,0,0,1,0,1],
+    [1,0,3,0,1,0,1,0,0,0,0,0,1,0,0,0,0,1,0,1],
     [1,0,1,0,1,0,1,0,1,1,1,0,1,1,1,1,0,1,0,1],
     [1,0,1,0,0,0,1,0,1,0,0,0,0,0,0,1,0,0,0,1],
     [1,0,1,1,1,1,1,0,1,0,1,1,1,1,0,1,1,1,1,1],
-    [1,0,0,0,0,0,0,0,1,0,0,0,0,1,0,0,0,0,0,1],
+    [1,0,0,0,0,3,0,0,1,0,0,3,0,1,0,0,0,0,0,1],
     [1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1]
 ];
+let maze = [];
 
 function initGame() {
     initAudio();
+    
+    // Parse map and spawn mines
+    maze = JSON.parse(JSON.stringify(rawMaze));
+    mines = [];
+    for (let r = 0; r < maze.length; r++) {
+        for (let c = 0; c < maze[0].length; c++) {
+            if (maze[r][c] === 3) {
+                mines.push({
+                    x: c * cellSize + cellSize/2,
+                    y: r * cellSize + cellSize/2,
+                    radius: 12,
+                    timer: Math.random() * 3 + 2 // 2 to 5 seconds
+                });
+                maze[r][c] = 0; // Clear it so it behaves like open water
+            }
+        }
+    }
     
     // Set Difficulty
     for (const radio of difficultyRadios) {
@@ -116,9 +160,10 @@ function initGame() {
     else if (difficulty === 'medium') freePings = 25;
     else if (difficulty === 'hard') freePings = 10;
     
-    player = { x: 60, y: 60, vx: 0, vy: 0, radius: 8 };
+    player = { x: 60, y: 60, vx: 0, vy: 0, radius: 8, invulnTimer: 0 };
     pings = [];
     pingsUsed = 0;
+    mineHits = 0;
     startTime = Date.now();
     gameState = 'playing';
     
@@ -149,13 +194,32 @@ function updatePingHUD() {
 
 function handlePings(dt) {
     if (keys.space) {
-        if (pings.length === 0 || pings[pings.length-1].radius > 100) {
-            pings.push({ x: player.x, y: player.y, radius: 0, maxRadius: 300, opacity: 1 });
+        // Player ping logic: cooldown checking based on last ping size
+        let canPing = true;
+        for (let p of pings) {
+            if (p.type === 'player' && p.radius < 100) {
+                canPing = false;
+                break;
+            }
+        }
+        
+        if (canPing) {
+            pings.push({ x: player.x, y: player.y, radius: 0, opacity: 1, type: 'player' });
             pingsUsed++;
             updatePingHUD();
-            playPingSound();
+            playPingSound(false);
         }
         keys.space = false;
+    }
+    
+    // Mine pings
+    for (let m of mines) {
+        m.timer -= dt;
+        if (m.timer <= 0) {
+            pings.push({ x: m.x, y: m.y, radius: 0, opacity: 1, type: 'mine' });
+            playPingSound(true);
+            m.timer = Math.random() * 2 + 3; // Reset to 3-5 seconds
+        }
     }
 
     for (let i = pings.length - 1; i >= 0; i--) {
@@ -214,6 +278,27 @@ function handlePhysics(dt, time) {
         playBumpSound();
         lastBump = time;
     }
+    
+    // Mine collisions
+    if (player.invulnTimer > 0) {
+        player.invulnTimer -= dt;
+    } else {
+        for (let m of mines) {
+            let dist = Math.hypot(player.x - m.x, player.y - m.y);
+            if (dist < player.radius + m.radius) {
+                // Collision!
+                mineHits++;
+                playExplosionSound();
+                player.invulnTimer = 1.0; // 1 second invulnerability
+                
+                // Bounce back
+                let angle = Math.atan2(player.y - m.y, player.x - m.x);
+                player.vx = Math.cos(angle) * 500;
+                player.vy = Math.sin(angle) * 500;
+                break;
+            }
+        }
+    }
 
     // Check goal
     if (getCell(player.x, player.y) === 2) {
@@ -226,7 +311,12 @@ function drawScene() {
     ctx.fillRect(0, 0, canvas.width, canvas.height);
 
     // Draw player
-    ctx.fillStyle = '#4CAF50';
+    if (player.invulnTimer > 0) {
+        // Flash if invulnerable
+        ctx.fillStyle = Math.floor(Date.now() / 100) % 2 === 0 ? '#4CAF50' : '#ff0000';
+    } else {
+        ctx.fillStyle = '#4CAF50';
+    }
     ctx.beginPath();
     ctx.arc(player.x, player.y, player.radius, 0, Math.PI * 2);
     ctx.fill();
@@ -239,19 +329,41 @@ function drawScene() {
                 let cellCenterX = c * cellSize + cellSize/2;
                 let cellCenterY = r * cellSize + cellSize/2;
                 
-                let maxBrightness = 0;
+                let bNormal = 0;
+                let bMine = 0;
+                
                 for(let p of pings) {
                     let dist = Math.hypot(p.x - cellCenterX, p.y - cellCenterY);
                     let diff = Math.abs(dist - p.radius);
                     if (diff < cellSize * 1.5) {
                         let brightness = (1 - diff / (cellSize * 1.5)) * p.opacity;
-                        if (brightness > maxBrightness) maxBrightness = brightness;
+                        if (p.type === 'mine') {
+                            if (brightness > bMine) bMine = brightness;
+                        } else {
+                            if (brightness > bNormal) bNormal = brightness;
+                        }
                     }
                 }
 
-                if (maxBrightness > 0.05) {
-                    ctx.fillStyle = type === 1 ? `rgba(0, 150, 255, ${maxBrightness})` : `rgba(255, 215, 0, ${maxBrightness})`;
-                    ctx.strokeStyle = type === 1 ? `rgba(0, 255, 255, ${maxBrightness})` : `rgba(255, 255, 255, ${maxBrightness})`;
+                if (bNormal > 0.05 || bMine > 0.05) {
+                    if (type === 1) {
+                        // Blend wall colors
+                        let red = Math.min(255, bMine * 255);
+                        let green = Math.min(255, bNormal * 150);
+                        let blue = Math.min(255, bNormal * 255);
+                        ctx.fillStyle = `rgba(${red}, ${green}, ${blue}, ${Math.max(bNormal, bMine)})`;
+                        
+                        let sRed = Math.min(255, bMine * 255);
+                        let sGreen = Math.min(255, bNormal * 255);
+                        let sBlue = Math.min(255, bNormal * 255);
+                        ctx.strokeStyle = `rgba(${sRed}, ${sGreen}, ${sBlue}, ${Math.max(bNormal, bMine)})`;
+                    } else if (type === 2) {
+                        // Goal always looks golden
+                        let b = Math.max(bNormal, bMine);
+                        ctx.fillStyle = `rgba(255, 215, 0, ${b})`;
+                        ctx.strokeStyle = `rgba(255, 255, 255, ${b})`;
+                    }
+                    
                     ctx.lineWidth = 2;
                     ctx.fillRect(c * cellSize, r * cellSize, cellSize, cellSize);
                     ctx.strokeRect(c * cellSize, r * cellSize, cellSize, cellSize);
@@ -259,11 +371,46 @@ function drawScene() {
             }
         }
     }
+    
+    // Draw Mines based on ping proximity
+    for (let m of mines) {
+        let maxBrightness = 0;
+        for(let p of pings) {
+            let dist = Math.hypot(p.x - m.x, p.y - m.y);
+            let diff = Math.abs(dist - p.radius);
+            if (diff < cellSize * 1.5) {
+                let brightness = (1 - diff / (cellSize * 1.5)) * p.opacity;
+                if (brightness > maxBrightness) maxBrightness = brightness;
+            }
+        }
+        
+        if (maxBrightness > 0.05) {
+            ctx.fillStyle = `rgba(255, 50, 50, ${maxBrightness})`;
+            ctx.beginPath();
+            ctx.arc(m.x, m.y, m.radius, 0, Math.PI * 2);
+            ctx.fill();
+            
+            // Draw spikes
+            ctx.strokeStyle = `rgba(255, 100, 100, ${maxBrightness})`;
+            ctx.lineWidth = 2;
+            for (let i = 0; i < 8; i++) {
+                let angle = (i / 8) * Math.PI * 2;
+                ctx.beginPath();
+                ctx.moveTo(m.x + Math.cos(angle) * m.radius, m.y + Math.sin(angle) * m.radius);
+                ctx.lineTo(m.x + Math.cos(angle) * (m.radius + 4), m.y + Math.sin(angle) * (m.radius + 4));
+                ctx.stroke();
+            }
+        }
+    }
 
     // Draw ping rings
     for(let p of pings) {
-        ctx.strokeStyle = `rgba(150, 255, 150, ${p.opacity * 0.5})`;
-        ctx.lineWidth = 2;
+        if (p.type === 'mine') {
+            ctx.strokeStyle = `rgba(255, 50, 50, ${p.opacity * 0.7})`;
+        } else {
+            ctx.strokeStyle = `rgba(150, 255, 150, ${p.opacity * 0.5})`;
+        }
+        ctx.lineWidth = p.type === 'mine' ? 3 : 2;
         ctx.beginPath();
         ctx.arc(p.x, p.y, p.radius, 0, Math.PI * 2);
         ctx.stroke();
@@ -291,16 +438,18 @@ function endGame() {
     playWinSound();
     
     let baseTime = parseFloat(timeElapsed.toFixed(2));
-    let penalty = 0;
+    let pPenalty = 0;
+    let mPenalty = mineHits * penaltyPerMine;
     
     if (freePings !== -1 && pingsUsed > freePings) {
-        penalty = (pingsUsed - freePings) * penaltyPerPing;
+        pPenalty = (pingsUsed - freePings) * penaltyPerPing;
     }
     
-    finalTotalScore = parseFloat((baseTime + penalty).toFixed(2));
+    finalTotalScore = parseFloat((baseTime + pPenalty + mPenalty).toFixed(2));
     
     document.getElementById('baseTime').innerText = baseTime.toFixed(2);
-    document.getElementById('penaltyTime').innerText = penalty.toFixed(2);
+    document.getElementById('penaltyTime').innerText = pPenalty.toFixed(2);
+    document.getElementById('minePenaltyTime').innerText = mPenalty.toFixed(2);
     document.getElementById('finalTime').innerText = finalTotalScore.toFixed(2);
     
     saveScoreBtn.disabled = false;
