@@ -420,7 +420,7 @@ function resizeCanvas() {
     canvas.width = rect.width;
     canvas.height = rect.height;
     
-    cellSize = canvas.width / mazeCols;
+    cellSize = canvas.width / viewCols;
     const scale = cellSize / oldCellSize;
 
     if (gameState === 'playing') {
@@ -507,7 +507,7 @@ async function initGame() {
     else if (difficulty === 'hard') { freePings = 10; torpedoReloadTime = 60; }
     uiOverlay.classList.add('hidden'); gameOverScreen.classList.add('hidden');
     await showMissionBriefing();
-    maze = generateMaze(mazeCols, mazeRows);
+    maze = generateMaze(worldCols, worldRows);
     mines = [];
     for (let r = 0; r < maze.length; r++) {
         for (let c = 0; c < maze[0].length; c++) {
