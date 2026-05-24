@@ -4,19 +4,23 @@ body {
     color: #4CAF50;
     display: flex;
     justify-content: center;
+    align-items: center;
     margin: 0;
     padding: 0;
-    overflow: hidden; /* Prevent body scroll */
+    overflow: hidden;
     height: 100vh;
     width: 100vw;
 }
 .container {
     display: flex;
-    gap: 20px;
-    height: 100%;
-    width: 100%;
-    padding: 10px;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    height: 100vh;
+    width: 100vw;
+    padding: 0;
     box-sizing: border-box;
+    overflow: hidden;
 }
 h1, h2, h3 { margin-top: 0; color: #8bc34a; }
 .game-area {
@@ -24,8 +28,13 @@ h1, h2, h3 { margin-top: 0; color: #8bc34a; }
     background-color: #000;
     border: 2px solid #333;
     box-shadow: 0 0 15px #4CAF50;
-    max-width: 100%;
+    aspect-ratio: 20 / 15;
+    max-width: 100vw;
+    max-height: 100vh;
     overflow: hidden;
+    display: flex;
+    align-items: center;
+    justify-content: center;
 }
 canvas {
     display: block;
@@ -176,12 +185,16 @@ canvas {
     display: flex;
     flex-direction: column;
     gap: 10px;
+    align-items: center;
+    justify-content: center;
+    width: 100%;
+    height: 100%;
 }
 .hud-side {
     background-color: #0a0a1a;
     border: 2px solid #333;
     padding: 10px 15px;
-    font-size: 18px;
+    font-size: 3.5vmin;
     font-weight: bold;
     display: flex;
     justify-content: space-around;
@@ -343,15 +356,40 @@ input { padding: 10px; width: 80%; background: #000; color: #4CAF50; border: 1px
     background: rgba(46, 204, 113, 0.8);
 }
 
-@media (max-width: 1000px) {
-    .container {
-        flex-direction: column;
-        align-items: center;
-        padding: 5px;
+@media (orientation: landscape) {
+    .game-area {
+        aspect-ratio: 24 / 15;
+        flex-direction: row;
     }
-    .score-board {
-        width: 100%;
-        max-width: 800px;
+    .hud-side {
+        width: 8.33%;
+        height: 100%;
+        flex-direction: column;
+        justify-content: center;
+        gap: 5vmin;
+        padding: 2vmin 1vmin;
+        font-size: 2.5vmin;
+        border: none;
+        background: rgba(10, 10, 26, 0.8);
+        box-shadow: none;
+    }
+    #hud-left { border-right: 1px solid #333; }
+    #hud-right { border-left: 1px solid #333; }
+    
+    canvas {
+        width: 83.33%;
+        height: 100%;
+    }
+
+    .hud-item {
+        flex-direction: column;
+        gap: 0.5vmin;
+        text-align: center;
+    }
+
+    #mobile-controls {
+        bottom: 5vmin;
+        padding: 0 10vmin;
     }
 }
 
@@ -369,6 +407,10 @@ input { padding: 10px; width: 80%; background: #000; color: #4CAF50; border: 1px
         background: #050510;
         color: #4CAF50;
         flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        position: fixed;
+        top: 0; left: 0; right: 0; bottom: 0;
     }
     .rotate-icon {
         font-size: 80px;
@@ -376,82 +418,9 @@ input { padding: 10px; width: 80%; background: #000; color: #4CAF50; border: 1px
         animation: rotate-anim 2s infinite;
     }
 }
+
 @keyframes rotate-anim {
     0% { transform: rotate(0deg); }
     50% { transform: rotate(90deg); }
     100% { transform: rotate(0deg); }
-}
-
-/* Side HUD for Mobile Landscape */
-@media (max-height: 500px) and (orientation: landscape) {
-    .container {
-        padding: 0;
-        gap: 0;
-    }
-    .game-wrapper {
-        flex-direction: row !important;
-        align-items: stretch;
-        justify-content: center;
-        height: 100vh;
-        width: 100vw;
-        gap: 0;
-    }
-    .hud-side {
-        width: 100px;
-        height: 100%;
-        flex-direction: column;
-        justify-content: center;
-        gap: 30px;
-        padding: 10px 5px;
-        box-sizing: border-box;
-        font-size: 14px;
-        border: none;
-        background: #0a0a1a;
-        box-shadow: none;
-    }
-    #hud-left {
-        border-right: 2px solid #333;
-        order: 1;
-    }
-    #hud-right {
-        border-left: 2px solid #333;
-        order: 3;
-    }
-    .game-area {
-        order: 2;
-        flex-grow: 1;
-        height: 100%;
-        border: none;
-        max-width: calc(100vw - 200px);
-    }
-    .hud-item {
-        display: flex;
-        flex-direction: column;
-        gap: 5px;
-        text-align: center;
-        align-items: center;
-    }
-    #mobile-controls {
-        bottom: 10px;
-        padding: 0 10px;
-        height: 100px;
-        align-items: center;
-    }
-    #joystick-container {
-        width: 80px;
-        height: 80px;
-    }
-    #joystick-base {
-        width: 70px;
-        height: 70px;
-    }
-    #joystick-knob {
-        width: 35px;
-        height: 35px;
-    }
-    .action-btn {
-        width: 60px;
-        padding: 8px;
-        font-size: 12px;
-    }
 }
