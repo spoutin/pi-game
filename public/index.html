@@ -13,13 +13,14 @@
             
             <div id="uiOverlay" class="ui-layer">
                 <h1>Sonar Escape</h1>
-                <p>Use WASD/Arrows to move. SPACE to ping.</p>
+                <p>Use WASD/Arrows to move. SPACE to ping. SHIFT or CLICK to fire Torpedo.</p>
                 <div class="difficulty-select">
-                    <label><input type="radio" name="difficulty" value="easy" checked> Easy (Unlimited Pings)</label><br>
-                    <label><input type="radio" name="difficulty" value="medium"> Medium (25 Pings)</label><br>
-                    <label><input type="radio" name="difficulty" value="hard"> Hard (10 Pings)</label>
+                    <label><input type="radio" name="difficulty" value="easy" checked> Easy (Unlimited Pings, 3 Torpedoes)</label><br>
+                    <label><input type="radio" name="difficulty" value="medium"> Medium (25 Pings, 1 Torpedo)</label><br>
+                    <label><input type="radio" name="difficulty" value="hard"> Hard (10 Pings, 0 Torpedoes)</label>
                 </div>
                 <p class="penalty-text">Medium/Hard: +3s penalty per extra ping used.</p>
+                <p class="penalty-text">Torpedoes destroy mines but don't restock.</p>
                 <button id="startBtn">Start Game</button>
             </div>
 
@@ -38,7 +39,8 @@
 
             <div id="hud">
                 Time: <span id="currentTime">0.0</span>s | 
-                Pings: <span id="pingCount">Unlimited</span>
+                Pings: <span id="pingCount">Unlimited</span> | 
+                Torpedoes: <span id="torpedoCount">3</span>
             </div>
         </div>
         

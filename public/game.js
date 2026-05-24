@@ -9,6 +9,7 @@ const playerNameInput = document.getElementById('playerName');
 const leaderboardEl = document.getElementById('leaderboard');
 const currentTimeEl = document.getElementById('currentTime');
 const pingCountEl = document.getElementById('pingCount');
+const torpedoCountEl = document.getElementById('torpedoCount');
 const difficultyRadios = document.getElementsByName('difficulty');
 
 let gameState = 'start';
@@ -17,6 +18,7 @@ let keys = { w: false, a: false, s: false, d: false, space: false };
 let pings = [];
 let wakes = [];
 let mines = [];
+let torpedoes = [];
 let mineHits = 0;
 let startTime = 0;
 let timeElapsed = 0;
@@ -26,6 +28,8 @@ let lastBump = 0;
 let difficulty = 'easy';
 let freePings = -1; // -1 means unlimited
 let pingsUsed = 0;
+let torpedoesUsed = 0;
+let torpedoLimit = 0;
 let penaltyPerPing = 3;
 let penaltyPerMine = 10;
 let finalTotalScore = 0;
@@ -110,6 +114,21 @@ function playWinSound() {
     });
 }
 
+function playTorpedoSound() {
+    if (!audioCtx) return;
+    let osc = audioCtx.createOscillator();
+    let gain = audioCtx.createGain();
+    osc.connect(gain);
+    gain.connect(audioCtx.destination);
+    osc.type = 'triangle';
+    osc.frequency.setValueAtTime(400, audioCtx.currentTime);
+    osc.frequency.exponentialRampToValueAtTime(100, audioCtx.currentTime + 0.8);
+    gain.gain.setValueAtTime(0.4, audioCtx.currentTime);
+    gain.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + 0.8);
+    osc.start();
+    osc.stop(audioCtx.currentTime + 0.8);
+}
+
 // Simple Maze (1: wall, 0: open, 2: goal, 3: mine spawn)
 const cellSize = 40;
 const rawMaze = [
@@ -157,14 +176,16 @@ function initGame() {
         }
     }
     
-    if (difficulty === 'easy') freePings = -1;
-    else if (difficulty === 'medium') freePings = 25;
-    else if (difficulty === 'hard') freePings = 10;
+    if (difficulty === 'easy') { freePings = -1; torpedoLimit = 3; }
+    else if (difficulty === 'medium') { freePings = 25; torpedoLimit = 1; }
+    else if (difficulty === 'hard') { freePings = 10; torpedoLimit = 0; }
     
     player = { x: 60, y: 60, vx: 0, vy: 0, radius: 10, invulnTimer: 0, angle: 0 };
     pings = [];
     wakes = [];
+    torpedoes = [];
     pingsUsed = 0;
+    torpedoesUsed = 0;
     mineHits = 0;
     startTime = Date.now();
     gameState = 'playing';
@@ -192,6 +213,8 @@ function updatePingHUD() {
             pingCountEl.style.color = '#ff5555';
         }
     }
+    
+    torpedoCountEl.innerText = Math.max(0, torpedoLimit - torpedoesUsed);
 }
 
 function handlePings(dt) {
@@ -268,6 +291,49 @@ function handlePhysics(dt, time) {
             wakes.splice(i, 1);
         }
     }
+    
+    // Update Torpedoes
+    for (let i = torpedoes.length - 1; i >= 0; i--) {
+        let t = torpedoes[i];
+        t.x += Math.cos(t.angle) * t.speed * dt;
+        t.y += Math.sin(t.angle) * t.speed * dt;
+        
+        // Add torpedo wake
+        if (Math.random() < 0.6) {
+            wakes.push({
+                x: t.x - Math.cos(t.angle) * 5 + (Math.random() - 0.5) * 4,
+                y: t.y - Math.sin(t.angle) * 5 + (Math.random() - 0.5) * 4,
+                radius: Math.random() * 2 + 1,
+                opacity: 0.8,
+                life: 0.5
+            });
+        }
+        
+        // Torpedo Wall Collision
+        if (getCell(t.x, t.y) === 1) {
+            torpedoes.splice(i, 1);
+            playExplosionSound();
+            pings.push({ x: t.x, y: t.y, radius: 0, opacity: 1, type: 'mine' }); // explosion ping
+            continue;
+        }
+        
+        // Torpedo Mine Collision
+        let hitMine = false;
+        for (let j = mines.length - 1; j >= 0; j--) {
+            let m = mines[j];
+            let dist = Math.hypot(t.x - m.x, t.y - m.y);
+            if (dist < m.radius + 5) { // 5 is approx torpedo radius
+                // Destroy Mine and Torpedo
+                mines.splice(j, 1);
+                torpedoes.splice(i, 1);
+                hitMine = true;
+                playExplosionSound();
+                pings.push({ x: t.x, y: t.y, radius: 0, opacity: 1, type: 'mine' }); // big explosion ping
+                break;
+            }
+        }
+        if (hitMine) continue;
+    }
 
     let newX = player.x + player.vx * dt;
     let newY = player.y + player.vy * dt;
@@ -335,6 +401,23 @@ function drawScene() {
         ctx.beginPath();
         ctx.arc(w.x, w.y, w.radius, 0, Math.PI * 2);
         ctx.fill();
+    }
+
+    // Draw Torpedoes
+    for (let t of torpedoes) {
+        ctx.save();
+        ctx.translate(t.x, t.y);
+        ctx.rotate(t.angle);
+        
+        ctx.fillStyle = '#ff3333';
+        ctx.beginPath();
+        ctx.ellipse(0, 0, 8, 3, 0, 0, Math.PI * 2);
+        ctx.fill();
+        
+        ctx.fillStyle = '#555';
+        ctx.fillRect(-8, -4, 4, 8); // tail
+        
+        ctx.restore();
     }
 
     // Draw player (submarine)
@@ -537,13 +620,38 @@ function endGame() {
 }
 
 // Input handling
+let isMouseDown = false;
+
 window.addEventListener('keydown', e => {
     if (e.key === 'w' || e.key === 'ArrowUp') keys.w = true;
     if (e.key === 'a' || e.key === 'ArrowLeft') keys.a = true;
     if (e.key === 's' || e.key === 'ArrowDown') keys.s = true;
     if (e.key === 'd' || e.key === 'ArrowRight') keys.d = true;
     if (e.key === ' ') { e.preventDefault(); keys.space = true; } // Prevent scrolling
+    
+    // Fire Torpedo
+    if (e.key === 'Shift') fireTorpedo();
 });
+
+window.addEventListener('mousedown', e => {
+    if (e.target === canvas) fireTorpedo();
+});
+
+function fireTorpedo() {
+    if (gameState !== 'playing') return;
+    if (torpedoesUsed < torpedoLimit) {
+        torpedoes.push({
+            x: player.x + Math.cos(player.angle) * player.radius * 2,
+            y: player.y + Math.sin(player.angle) * player.radius * 2,
+            angle: player.angle,
+            speed: 300
+        });
+        torpedoesUsed++;
+        updatePingHUD();
+        playTorpedoSound();
+    }
+}
+
 window.addEventListener('keyup', e => {
     if (e.key === 'w' || e.key === 'ArrowUp') keys.w = false;
     if (e.key === 'a' || e.key === 'ArrowLeft') keys.a = false;
