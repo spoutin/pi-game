@@ -623,8 +623,13 @@ function drawScene() {
     ctx.fillStyle = '#424242'; ctx.fillRect(-player.radius * 3.0, -player.radius * 0.4, player.radius * 0.8, player.radius * 0.8);
     ctx.fillStyle = '#bdbdbd'; let propScale = Math.abs(Math.sin(Date.now() / 30)); ctx.fillRect(-player.radius * 3.2, -player.radius * 1.2 * propScale, player.radius * 0.4, player.radius * 2.4 * propScale);
     ctx.restore();
-    for (let r = 0; r < maze.length; r++) {
-        for (let c = 0; c < maze[0].length; c++) {
+    const startCol = Math.max(0, Math.floor(cameraX / cellSize));
+    const endCol = Math.min(worldCols, Math.ceil((cameraX + canvas.width) / cellSize));
+    const startRow = Math.max(0, Math.floor(cameraY / cellSize));
+    const endRow = Math.min(worldRows, Math.ceil((cameraY + canvas.height) / cellSize));
+
+    for (let r = startRow; r < endRow; r++) {
+        for (let c = startCol; c < endCol; c++) {
             let type = maze[r][c];
             if (type === 1 || type === 2) {
                 let cellCenterX = c * cellSize + cellSize/2; let cellCenterY = r * cellSize + cellSize/2;
@@ -656,6 +661,8 @@ function drawScene() {
         }
     }
     for (let m of mines) {
+        if (m.x < cameraX - cellSize || m.x > cameraX + canvas.width + cellSize ||
+            m.y < cameraY - cellSize || m.y > cameraY + canvas.height + cellSize) continue;
         let maxBrightness = 0;
         for(let p of pings) { let dist = Math.hypot(p.x - m.x, p.y - m.y); let diff = Math.abs(dist - p.radius); if (diff < cellSize * 1.5) maxBrightness = Math.max(maxBrightness, (1 - diff / (cellSize * 1.5)) * p.opacity); }
         if (maxBrightness > 0.05) {
@@ -665,6 +672,8 @@ function drawScene() {
         }
     }
     for(let p of pings) {
+        if (p.x + p.radius < cameraX || p.x - p.radius > cameraX + canvas.width || 
+            p.y + p.radius < cameraY || p.y - p.radius > cameraY + canvas.height) continue;
         if (p.type === 'mine') ctx.strokeStyle = `rgba(255, 50, 50, ${p.opacity * 0.7})`; else ctx.strokeStyle = `rgba(150, 255, 150, ${p.opacity * 0.5})`;
         ctx.lineWidth = p.type === 'mine' ? 3 : 2; ctx.beginPath(); ctx.arc(p.x, p.y, p.radius, 0, Math.PI * 2); ctx.stroke();
     }
