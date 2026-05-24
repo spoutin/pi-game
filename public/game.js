@@ -211,16 +211,6 @@ function handlePings(dt) {
         }
         keys.space = false;
     }
-    
-    // Mine pings
-    for (let m of mines) {
-        m.timer -= dt;
-        if (m.timer <= 0) {
-            pings.push({ x: m.x, y: m.y, radius: 0, opacity: 1, type: 'mine' });
-            playPingSound(true);
-            m.timer = Math.random() * 2 + 3; // Reset to 3-5 seconds
-        }
-    }
 
     for (let i = pings.length - 1; i >= 0; i--) {
         let p = pings[i];
