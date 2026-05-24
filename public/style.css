@@ -177,25 +177,25 @@ canvas {
     flex-direction: column;
     gap: 10px;
 }
-#hud-panel {
+.hud-side {
     background-color: #0a0a1a;
     border: 2px solid #333;
-    padding: 15px 20px;
-    font-size: 20px;
+    padding: 10px 15px;
+    font-size: 18px;
     font-weight: bold;
     display: flex;
-    justify-content: space-between;
-    box-shadow: 0 0 10px #4CAF50;
+    justify-content: space-around;
+    box-shadow: 0 0 10px rgba(76, 175, 80, 0.3);
+    z-index: 5;
 }
-#hud-left, #hud-right {
+
+#hud-left { border-bottom: none; }
+#hud-right { border-top: none; }
+
+.hud-item {
     display: flex;
     align-items: center;
-    gap: 15px;
-}
-.hud-side {
-    display: flex;
-    align-items: center;
-    gap: 15px;
+    gap: 10px;
 }
 .hidden { display: none !important; }
 .score-board {
@@ -388,38 +388,39 @@ input { padding: 10px; width: 80%; background: #000; color: #4CAF50; border: 1px
         padding: 0;
         gap: 0;
     }
+    .score-board {
+        display: none; /* Hide leaderboard to save space */
+    }
     .game-wrapper {
         flex-direction: row !important;
+        align-items: stretch;
+        justify-content: center;
         height: 100vh;
         width: 100vw;
-        justify-content: center;
     }
-    #hud-panel {
-        flex-direction: column;
+    .hud-side {
         width: 100px;
         height: 100%;
+        flex-direction: column;
+        justify-content: center;
+        gap: 30px;
         padding: 10px 5px;
         box-sizing: border-box;
         font-size: 14px;
         border: none;
-        border-right: 2px solid #333;
         background: #0a0a1a;
+        box-shadow: none;
     }
     #hud-left {
-        flex-direction: column;
-        justify-content: center;
-        height: 50%;
-        gap: 20px;
+        border-right: 2px solid #333;
+        order: 1;
     }
     #hud-right {
-        order: 3;
-        flex-direction: column;
-        justify-content: center;
-        height: 50%;
-        gap: 20px;
         border-left: 2px solid #333;
+        order: 3;
     }
     .game-area {
+        order: 2;
         flex-grow: 1;
         height: 100%;
         border: none;

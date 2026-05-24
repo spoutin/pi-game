@@ -426,6 +426,7 @@ function resizeCanvas() {
     canvas.width = newWidth; 
     canvas.height = newHeight; 
     cellSize = canvas.width / mazeCols;
+    joystickMaxDist = isSmallLandscape ? 30 : 40;
 }
 
 function toggleMobileControls(show) {
@@ -707,7 +708,7 @@ const joystickKnob = document.getElementById('joystick-knob');
 const btnPing = document.getElementById('btn-ping');
 const btnFire = document.getElementById('btn-fire');
 
-let joystickActive = false; let joystickStartX = 0; let joystickStartY = 0; const joystickMaxDist = 40;
+let joystickActive = false; let joystickStartX = 0; let joystickStartY = 0; let joystickMaxDist = 40;
 
 function handleJoystick(e) {
     if (!joystickActive) return;
