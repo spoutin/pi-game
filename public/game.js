@@ -138,8 +138,9 @@ function startBackgroundAudio() {
     const tempo = 1.2; // Slightly slower, more atmospheric
     
     const playNextNote = () => {
-        if (gameState !== 'playing') return;
-        if (audioSettings.musicEnabled) {
+        if (step % 4 === 0) console.log(`[Audio Debug] Music Step: ${step}, State: ${gameState}`);
+        
+        if (gameState === 'playing' && audioSettings.musicEnabled) {
             const now = audioCtx.currentTime;
             
             // Bass pulse every 2 beats
