@@ -570,7 +570,17 @@ function drawScene() {
     // Draw player (submarine)
     ctx.save();
     ctx.translate(player.x, player.y);
-    ctx.rotate(player.angle);
+    
+    // We want the sub to point in the direction of movement, 
+    // but we don't want it to be upside down when moving left.
+    // If moving left (angle between PI/2 and 3PI/2 or -PI/2 and -3PI/2), we flip it vertically.
+    let isMovingLeft = Math.abs(player.angle) > Math.PI / 2;
+    if (isMovingLeft) {
+        ctx.scale(-1, 1);
+        ctx.rotate(Math.PI - player.angle);
+    } else {
+        ctx.rotate(player.angle);
+    }
     
     let subColor = '#4CAF50';
     let subDark = '#2e7d32';
