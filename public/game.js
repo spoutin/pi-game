@@ -15,6 +15,7 @@ let gameState = 'start';
 let player = { x: 50, y: 50, vx: 0, vy: 0, radius: 10, invulnTimer: 0, angle: 0 };
 let keys = { w: false, a: false, s: false, d: false, space: false };
 let pings = [];
+let wakes = [];
 let mines = [];
 let mineHits = 0;
 let startTime = 0;
@@ -162,6 +163,7 @@ function initGame() {
     
     player = { x: 60, y: 60, vx: 0, vy: 0, radius: 10, invulnTimer: 0, angle: 0 };
     pings = [];
+    wakes = [];
     pingsUsed = 0;
     mineHits = 0;
     startTime = Date.now();
@@ -242,6 +244,29 @@ function handlePhysics(dt, time) {
 
     if (Math.abs(player.vx) > 0.1 || Math.abs(player.vy) > 0.1) {
         player.angle = Math.atan2(player.vy, player.vx);
+        
+        // Add wake behind the sub
+        if (Math.random() < 0.4) {
+            let backX = player.x - Math.cos(player.angle) * player.radius * 2;
+            let backY = player.y - Math.sin(player.angle) * player.radius * 2;
+            wakes.push({
+                x: backX + (Math.random() - 0.5) * 8,
+                y: backY + (Math.random() - 0.5) * 8,
+                radius: Math.random() * 3 + 1.5,
+                opacity: 0.8,
+                life: 1.0
+            });
+        }
+    }
+    
+    // Update wakes
+    for (let i = wakes.length - 1; i >= 0; i--) {
+        wakes[i].life -= dt;
+        wakes[i].opacity = wakes[i].life * 0.8;
+        wakes[i].radius += dt * 2; // bubbles slightly expand
+        if (wakes[i].life <= 0) {
+            wakes.splice(i, 1);
+        }
     }
 
     let newX = player.x + player.vx * dt;
@@ -304,33 +329,55 @@ function drawScene() {
     ctx.fillStyle = '#000';
     ctx.fillRect(0, 0, canvas.width, canvas.height);
 
+    // Draw wakes
+    for (let w of wakes) {
+        ctx.fillStyle = `rgba(180, 240, 255, ${w.opacity})`;
+        ctx.beginPath();
+        ctx.arc(w.x, w.y, w.radius, 0, Math.PI * 2);
+        ctx.fill();
+    }
+
     // Draw player (submarine)
     ctx.save();
     ctx.translate(player.x, player.y);
     ctx.rotate(player.angle);
     
-    if (player.invulnTimer > 0) {
-        // Flash if invulnerable
-        ctx.fillStyle = Math.floor(Date.now() / 100) % 2 === 0 ? '#4CAF50' : '#ff0000';
-    } else {
-        ctx.fillStyle = '#4CAF50';
+    let subColor = '#4CAF50';
+    let subDark = '#2e7d32';
+    
+    if (player.invulnTimer > 0 && Math.floor(Date.now() / 100) % 2 === 0) {
+        subColor = '#ff5555';
+        subDark = '#cc0000';
     }
     
-    // Submarine body (ellipse-like)
+    // Submarine hull
+    ctx.fillStyle = subColor;
     ctx.beginPath();
-    ctx.ellipse(0, 0, player.radius * 1.5, player.radius, 0, 0, Math.PI * 2);
+    ctx.ellipse(0, 0, player.radius * 2, player.radius * 1.2, 0, 0, Math.PI * 2);
     ctx.fill();
     
-    // Submarine tail fin
+    // Conning tower (sail)
+    ctx.fillStyle = subDark;
+    ctx.fillRect(-player.radius * 0.2, -player.radius * 1.8, player.radius * 1.2, player.radius);
+    
+    // Window on sail
+    ctx.fillStyle = '#81d4fa'; // light blue window
+    ctx.beginPath();
+    ctx.arc(player.radius * 0.4, -player.radius * 1.4, player.radius * 0.3, 0, Math.PI * 2);
+    ctx.fill();
+    
+    // Tail fin
+    ctx.fillStyle = subColor;
     ctx.beginPath();
     ctx.moveTo(-player.radius * 1.5, 0);
-    ctx.lineTo(-player.radius * 2, -player.radius * 0.8);
-    ctx.lineTo(-player.radius * 2, player.radius * 0.8);
+    ctx.lineTo(-player.radius * 2.5, -player.radius * 1.2);
+    ctx.lineTo(-player.radius * 2.5, player.radius * 1.2);
     ctx.fill();
     
-    // Submarine periscope
-    ctx.fillRect(0, -player.radius * 1.5, player.radius * 0.4, player.radius);
-    ctx.fillRect(0, -player.radius * 1.5, player.radius * 0.8, player.radius * 0.3);
+    // Propeller spinning effect
+    ctx.fillStyle = '#9e9e9e'; // grey
+    let propScale = Math.abs(Math.sin(Date.now() / 50));
+    ctx.fillRect(-player.radius * 2.8, -player.radius * 0.8 * propScale, player.radius * 0.3, player.radius * 1.6 * propScale);
     
     ctx.restore();
 
