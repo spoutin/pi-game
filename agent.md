@@ -23,9 +23,11 @@ The game uses a global state pattern. Key variables:
 - **Dynamic Scaling:** The game uses a `cellSize` variable calculated in `resizeCanvas`. All rendering coordinates and sizes should be relative to `cellSize`.
 - **Sonar Lighting:** Walls and objects are rendered based on their proximity to active `pings`. The brightness is calculated using the distance from the ping ring radius.
 - **Submarine Rotation:** Handled via `ctx.save()`, `ctx.translate()`, and `ctx.rotate()`. Note the "moving left" logic which flips the sub horizontally (`ctx.scale(-1, 1)`) to keep it upright.
+- **Surface Ambient Light:** The top of the map has a blue gradient (`surfaceDepth = cellSize * 2.5`) providing partial visibility without pings.
 
 ### 3. Physics & Collision (`handlePhysics`)
 - **Movement:** Uses an acceleration/friction model to simulate water resistance.
+- **Scale Independence:** All physics constants (acceleration, speeds, collision radii) are multiplied by `cellSize` to ensure consistent gameplay across all screen resolutions.
 - **AABB Collision:** The player and projectiles check against the `maze` grid using the `getCell` helper.
 - **Circular Collision:** Collision between the player and mines/depth charges uses a simple hypotenuse distance check.
 
@@ -34,9 +36,10 @@ The game uses a global state pattern. Key variables:
 - SFX are synthesized on the fly (Sine, Triangle, Square, and Sawtooth oscillators).
 - Audio context must be resumed on a user gesture (`initAudio` called in `initGame`).
 
-### 5. Mobile Support
-- Touch detection toggles the visibility of `#mobile-controls`.
-- Controls use `touchstart` and `touchend` to update the `keys` object, mimicking keyboard input.
+### 5. Input & Mobile Overlay
+- **Virtual Joystick:** A custom touch-to-direction implementation mapping to the `keys` object.
+- **Action Buttons:** Dedicated `touchstart` listeners for PING and FIRE.
+- **Typing Effect:** `showMissionBriefing` uses an `async` loop with `setTimeout` to render mission text.
 
 ## API Endpoints
 

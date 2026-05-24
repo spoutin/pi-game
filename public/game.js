@@ -200,7 +200,7 @@ async function showMissionBriefing() {
     const missionOverlay = document.getElementById('missionOverlay');
     const missionText = document.getElementById('missionText');
     const missionContinue = document.getElementById('missionContinue');
-    const fullText = "Find the treasure.\n\nPing to find the path, and use your torpedoes to destroy the mines.";
+    const fullText = "MISSION BRIEFING:\n\nDetecting high-value treasure at the end of this sector.\n\nNAVCOM: Use your active SONAR (SPACE) to illuminate the terrain. The abyss is deep and visibility is zero.\n\nCAUTION: Waters are heavily mined. Deploy TORPEDOES (SHIFT/CLICK) to neutralize threats.\n\nGood luck, Commander.";
     
     missionOverlay.classList.remove('hidden', 'fade-out');
     missionContinue.classList.add('hidden');
@@ -209,9 +209,8 @@ async function showMissionBriefing() {
     // Typing effect
     for (let i = 0; i < fullText.length; i++) {
         missionText.innerText += fullText[i];
-        if (fullText[i] !== " ") {
-            await new Promise(r => setTimeout(r, 30));
-        }
+        // Wait for every character to create a consistent rhythmic typing feel
+        await new Promise(r => setTimeout(r, 25));
     }
     
     // Show continue hint
