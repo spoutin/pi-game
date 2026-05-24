@@ -764,7 +764,7 @@ function drawTorpedoUI() {
     torpedoUICtx.clearRect(0, 0, torpedoUICanvas.width, torpedoUICanvas.height);
     
     // Draw outline
-    torpedoUICtx.strokeStyle = '#ff3333';
+    torpedoUICtx.strokeStyle = torpedoTimer <= 0 ? '#4CAF50' : '#ff3333';
     torpedoUICtx.lineWidth = 1;
     torpedoUICtx.beginPath();
     torpedoUICtx.ellipse(20, 7.5, 15, 5, 0, 0, Math.PI * 2);
@@ -774,13 +774,13 @@ function drawTorpedoUI() {
     
     // Draw fill based on reload progress
     if (torpedoTimer <= 0) {
-        torpedoUICtx.fillStyle = '#ff3333';
+        torpedoUICtx.fillStyle = '#4CAF50';
         torpedoUICtx.beginPath();
         torpedoUICtx.ellipse(20, 7.5, 15, 5, 0, 0, Math.PI * 2);
         torpedoUICtx.fill();
     } else {
         let progress = 1.0 - (torpedoTimer / torpedoReloadTime);
-        torpedoUICtx.fillStyle = 'rgba(255, 51, 51, 0.5)';
+        torpedoUICtx.fillStyle = '#ff3333';
         
         torpedoUICtx.save();
         torpedoUICtx.beginPath();

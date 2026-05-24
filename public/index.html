@@ -37,10 +37,14 @@
             </div>
 
             <div id="hud">
-                Health: <span id="healthCount">♥♥♥</span> |
-                Time: <span id="currentTime">0.0</span>s | 
-                Pings: <span id="pingCount">Unlimited</span> | 
-                Torpedo: <canvas id="torpedoUICanvas" width="40" height="15" style="vertical-align: middle;"></canvas>
+                <div id="hud-left">
+                    <span>Health: <span id="healthCount">♥♥♥</span></span>
+                    <span>Time: <span id="currentTime">0.0</span>s</span>
+                </div>
+                <div id="hud-right">
+                    <span>Pings: <span id="pingCount">Unlimited</span></span>
+                    <span>Torpedo: <canvas id="torpedoUICanvas" width="40" height="15" style="vertical-align: middle;"></canvas></span>
+                </div>
             </div>
         </div>
         
