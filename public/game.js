@@ -199,22 +199,35 @@ function toggleMobileControls(show) {
 async function showMissionBriefing() {
     const missionOverlay = document.getElementById('missionOverlay');
     const missionText = document.getElementById('missionText');
+    const missionContinue = document.getElementById('missionContinue');
     const fullText = "Find the treasure.\n\nPing to find the path, and use your torpedoes to destroy the mines.";
     
     missionOverlay.classList.remove('hidden', 'fade-out');
+    missionContinue.classList.add('hidden');
     missionText.innerText = "";
     
     // Typing effect
     for (let i = 0; i < fullText.length; i++) {
         missionText.innerText += fullText[i];
         if (fullText[i] !== " ") {
-            // Play a tiny tick sound if we had one, but we'll just wait
             await new Promise(r => setTimeout(r, 30));
         }
     }
     
-    // Wait a bit after typing is done
-    await new Promise(r => setTimeout(r, 2000));
+    // Show continue hint
+    missionContinue.classList.remove('hidden');
+    
+    // Wait for click or touch
+    await new Promise(resolve => {
+        const handler = (e) => {
+            e.preventDefault();
+            missionOverlay.removeEventListener('click', handler);
+            missionOverlay.removeEventListener('touchstart', handler);
+            resolve();
+        };
+        missionOverlay.addEventListener('click', handler);
+        missionOverlay.addEventListener('touchstart', handler, { passive: false });
+    });
     
     // Interesting fade out
     missionOverlay.classList.add('fade-out');

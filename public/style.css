@@ -100,6 +100,19 @@ canvas {
     margin-top: 20px;
     min-height: 100px;
 }
+.continue-hint {
+    margin-top: 30px;
+    font-size: 0.9rem;
+    color: #ffd700;
+    text-transform: uppercase;
+    letter-spacing: 3px;
+    animation: pulse 1.5s infinite;
+}
+@keyframes pulse {
+    0% { opacity: 0.3; }
+    50% { opacity: 1; }
+    100% { opacity: 0.3; }
+}
 @keyframes digital-flicker {
     0% { opacity: 1; }
     50% { opacity: 0.98; }
