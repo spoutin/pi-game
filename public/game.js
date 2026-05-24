@@ -233,8 +233,6 @@ function updatePingHUD() {
         }
     }
 }
-    }
-}
 
 function handlePings(dt) {
     if (keys.space) {
