@@ -36,9 +36,17 @@ Triage is performed using a "Collaborative" model:
 2. **PR Creation:**
    * Command: `gh pr create --body "Closes #ID" --label "ready-for-review"`
    * Verify "Closes #ID" is in the body to ensure automatic closure of the issue.
-3. **CI Check:**
-   * Command: `gh pr checks`
-   * Monitor for failures. Attempt one round of automated fixes if trivial (linting).
+
+## Merging Phase (Automated)
+1. **Verification:**
+   * Command: `gh pr checks <PR_NUMBER>`
+   * **If checks pass:** Proceed to merge.
+   * **If no checks exist:** Notify user: *"No CI checks detected. Proceeding with merge after local verification."*
+   * **If checks fail:** Stop and request manual intervention.
+2. **Merge:**
+   * Command: `gh pr merge <PR_NUMBER> --squash --delete-branch`
+3. **Audit:**
+   * Log the merge action to the audit log.
 
 ## Safety & Audit Trail
 * **Hard Boundary:** All commands MUST be relative to the project root. Absolute paths outside the project are forbidden.
@@ -48,3 +56,4 @@ Triage is performed using a "Collaborative" model:
 * **Verification Gates:** 
   * MUST get approval for implementation plan.
   * MUST summarize file deletions/renames before PR creation.
+  * MUST provide a "Merge Summary" and get final approval before executing `gh pr merge`.
