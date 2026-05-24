@@ -47,6 +47,8 @@ let startTime = 0;
 let timeElapsed = 0;
 let lastFrame = performance.now();
 let lastBump = 0;
+let cameraX = 0;
+let cameraY = 0;
 
 let difficulty = 'easy';
 let freePings = -1;
@@ -62,8 +64,6 @@ let finalTotalScore = 0;
 let cellSize = 50;
 const worldCols = 60;
 const worldRows = 60;
-let viewCols = 20;
-let viewRows = 15;
 let maze = [];
 
 // Audio State
@@ -412,13 +412,9 @@ async function lockOrientation() {
 function resizeCanvas() {
     if (!gameArea) return;
 
-    const rect = gameArea.getBoundingClientRect();
-    canvas.width = rect.width;
-    canvas.height = rect.height;
-    
-    cellSize = 50;
-    viewCols = Math.ceil(canvas.width / cellSize);
-    viewRows = Math.ceil(canvas.height / cellSize);
+    // Use clientWidth/Height to match the content area (excluding borders)
+    canvas.width = gameArea.clientWidth;
+    canvas.height = gameArea.clientHeight;
 
     const isMobile = 'ontouchstart' in window || navigator.maxTouchPoints > 0;
     const isLandscape = window.innerWidth > window.innerHeight;
@@ -543,18 +539,20 @@ function handlePhysics(dt, time) {
         if (hitMine) continue;
     }
     if (Math.random() < 0.01 && surfaceShips.length < 2) {
-        surfaceShips.push({ x: Math.random() < 0.5 ? -cellSize * 1.2 : canvas.width + cellSize * 1.2, y: cellSize * 0.75, vx: 0, speed: Math.random() * (cellSize * 1.25) + (cellSize * 1.25), direction: 0, dropTimer: 0 });
-        let ship = surfaceShips[surfaceShips.length - 1]; ship.direction = ship.x < 0 ? 1 : -1; ship.vx = ship.speed * ship.direction;
+        const spawnMargin = cellSize * 2;
+        const spawnX = Math.random() < 0.5 ? cameraX - spawnMargin : cameraX + canvas.width + spawnMargin;
+        surfaceShips.push({ x: spawnX, y: cellSize * 0.75, vx: 0, speed: Math.random() * (cellSize * 1.25) + (cellSize * 1.25), direction: 0, dropTimer: 0 });
+        let ship = surfaceShips[surfaceShips.length - 1]; ship.direction = ship.x < cameraX ? 1 : -1; ship.vx = ship.speed * ship.direction;
     }
     for (let i = surfaceShips.length - 1; i >= 0; i--) {
         let ship = surfaceShips[i]; ship.x += ship.vx * dt;
         if (Math.abs(ship.x - player.x) < cellSize * 1.25 && ship.dropTimer <= 0) { depthCharges.push({ x: ship.x, y: ship.y + cellSize * 0.25, vy: cellSize * 2.0, radius: cellSize * 0.15, active: true }); ship.dropTimer = 2.0; }
         if (ship.dropTimer > 0) ship.dropTimer -= dt;
-        if ((ship.direction === 1 && ship.x > canvas.width + cellSize * 2.5) || (ship.direction === -1 && ship.x < -cellSize * 2.5)) surfaceShips.splice(i, 1);
+        if ((ship.direction === 1 && ship.x > cameraX + canvas.width + cellSize * 3) || (ship.direction === -1 && ship.x < cameraX - cellSize * 3)) surfaceShips.splice(i, 1);
     }
     for (let i = depthCharges.length - 1; i >= 0; i--) {
         let dc = depthCharges[i]; dc.y += dc.vy * dt;
-        if (dc.y > canvas.height) { playExplosionSound(); pings.push({ x: dc.x, y: dc.y, radius: 0, opacity: 1, type: 'mine' }); depthCharges.splice(i, 1); continue; }
+        if (dc.y > worldRows * cellSize) { playExplosionSound(); pings.push({ x: dc.x, y: dc.y, radius: 0, opacity: 1, type: 'mine' }); depthCharges.splice(i, 1); continue; }
         if (player.invulnTimer <= 0 && Math.hypot(player.x - dc.x, player.y - dc.y) < player.radius + dc.radius) {
             currentHealth--; updateHealthHUD(); playExplosionSound(); player.invulnTimer = 1.0;
             let angle = Math.atan2(player.y - dc.y, player.x - dc.x); player.vx = Math.cos(angle) * (cellSize * 12.5); player.vy = Math.sin(angle) * (cellSize * 12.5);
@@ -580,13 +578,22 @@ function handlePhysics(dt, time) {
 }
 
 function drawScene() {
+    cameraX = player.x - canvas.width / 2;
+    cameraY = player.y - canvas.height / 2;
+    cameraX = Math.max(0, Math.min(cameraX, worldCols * cellSize - canvas.width));
+    cameraY = Math.max(0, Math.min(cameraY, worldRows * cellSize - canvas.height));
+
     ctx.fillStyle = '#000'; ctx.fillRect(0, 0, canvas.width, canvas.height);
+    
+    ctx.save();
+    ctx.translate(-cameraX, -cameraY);
+
     const surfaceDepth = cellSize * 2.5;
     let gradient = ctx.createLinearGradient(0, 0, 0, surfaceDepth);
     gradient.addColorStop(0, 'rgba(0, 50, 100, 0.4)'); gradient.addColorStop(1, 'rgba(0, 50, 100, 0)');
-    ctx.fillStyle = gradient; ctx.fillRect(0, 0, canvas.width, surfaceDepth);
+    ctx.fillStyle = gradient; ctx.fillRect(cameraX, 0, canvas.width, surfaceDepth);
     ctx.strokeStyle = 'rgba(100, 200, 255, 0.3)'; ctx.lineWidth = 2; ctx.beginPath();
-    for (let x = 0; x <= canvas.width; x += 10) { let y = (cellSize * 0.75) + Math.sin(x * 0.05 + Date.now() * 0.002) * 5; if (x === 0) ctx.moveTo(x, y); else ctx.lineTo(x, y); }
+    for (let x = cameraX; x <= cameraX + canvas.width; x += 10) { let y = (cellSize * 0.75) + Math.sin(x * 0.05 + Date.now() * 0.002) * 5; if (x === cameraX) ctx.moveTo(x, y); else ctx.lineTo(x, y); }
     ctx.stroke();
     for (let w of wakes) { ctx.fillStyle = `rgba(180, 240, 255, ${w.opacity})`; ctx.beginPath(); ctx.arc(w.x, w.y, w.radius, 0, Math.PI * 2); ctx.fill(); }
     for (let s of surfaceShips) {
@@ -661,6 +668,7 @@ function drawScene() {
         if (p.type === 'mine') ctx.strokeStyle = `rgba(255, 50, 50, ${p.opacity * 0.7})`; else ctx.strokeStyle = `rgba(150, 255, 150, ${p.opacity * 0.5})`;
         ctx.lineWidth = p.type === 'mine' ? 3 : 2; ctx.beginPath(); ctx.arc(p.x, p.y, p.radius, 0, Math.PI * 2); ctx.stroke();
     }
+    ctx.restore();
 }
 
 const torpedoUICanvas = document.getElementById('torpedoUICanvas');
@@ -759,11 +767,24 @@ window.addEventListener('keydown', e => {
     if (e.key === 'Shift') fireTorpedo();
 });
 
-window.addEventListener('mousedown', e => { if (e.target === canvas) fireTorpedo(); });
-function fireTorpedo() {
+window.addEventListener('mousedown', e => { 
+    if (e.target === canvas) {
+        const rect = canvas.getBoundingClientRect();
+        const mouseX = e.clientX - rect.left;
+        const mouseY = e.clientY - rect.top;
+        const worldX = mouseX + cameraX;
+        const worldY = mouseY + cameraY;
+        fireTorpedo(worldX, worldY);
+    }
+});
+function fireTorpedo(targetX, targetY) {
     if (gameState !== 'playing') return;
     if (torpedoTimer <= 0) {
-        torpedoes.push({ x: player.x + Math.cos(player.angle) * player.radius * 2, y: player.y + Math.sin(player.angle) * player.radius * 2, angle: player.angle, speed: cellSize * 7.5 });
+        let angle = player.angle;
+        if (targetX !== undefined && targetY !== undefined) {
+            angle = Math.atan2(targetY - player.y, targetX - player.x);
+        }
+        torpedoes.push({ x: player.x + Math.cos(angle) * player.radius * 2, y: player.y + Math.sin(angle) * player.radius * 2, angle: angle, speed: cellSize * 7.5 });
         torpedoTimer = torpedoReloadTime; playTorpedoSound();
     }
 }
