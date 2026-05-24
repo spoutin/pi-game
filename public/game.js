@@ -869,6 +869,68 @@ function endGame(win = true) {
 // Input handling
 let isMouseDown = false;
 
+// Mobile Controls Setup
+const mobileControls = document.getElementById('mobile-controls');
+const btnUp = document.getElementById('btn-up');
+const btnDown = document.getElementById('btn-down');
+const btnLeft = document.getElementById('btn-left');
+const btnRight = document.getElementById('btn-right');
+const btnPing = document.getElementById('btn-ping');
+const btnFire = document.getElementById('btn-fire');
+
+// Helper for mobile buttons
+function setupMobileBtn(btn, key) {
+    if (!btn) return;
+    btn.addEventListener('touchstart', (e) => {
+        e.preventDefault();
+        keys[key] = true;
+    });
+    btn.addEventListener('touchend', (e) => {
+        e.preventDefault();
+        keys[key] = false;
+    });
+    btn.addEventListener('mousedown', (e) => {
+        keys[key] = true;
+    });
+    btn.addEventListener('mouseup', (e) => {
+        keys[key] = false;
+    });
+    btn.addEventListener('mouseleave', (e) => {
+        keys[key] = false;
+    });
+}
+
+setupMobileBtn(btnUp, 'w');
+setupMobileBtn(btnDown, 's');
+setupMobileBtn(btnLeft, 'a');
+setupMobileBtn(btnRight, 'd');
+
+if (btnPing) {
+    btnPing.addEventListener('touchstart', (e) => {
+        e.preventDefault();
+        keys.space = true;
+    });
+    btnPing.addEventListener('touchend', (e) => {
+        e.preventDefault();
+        keys.space = false;
+    });
+    btnPing.addEventListener('mousedown', () => keys.space = true);
+    btnPing.addEventListener('mouseup', () => keys.space = false);
+}
+
+if (btnFire) {
+    btnFire.addEventListener('touchstart', (e) => {
+        e.preventDefault();
+        fireTorpedo();
+    });
+    btnFire.addEventListener('mousedown', fireTorpedo);
+}
+
+// Show mobile controls if touch device is detected
+if ('ontouchstart' in window || navigator.maxTouchPoints > 0) {
+    mobileControls.classList.remove('hidden');
+}
+
 window.addEventListener('keydown', e => {
     if (e.key === 'w' || e.key === 'ArrowUp') keys.w = true;
     if (e.key === 'a' || e.key === 'ArrowLeft') keys.a = true;

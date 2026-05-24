@@ -17,9 +17,13 @@ h1, h2, h3 { margin-top: 0; color: #8bc34a; }
     background-color: #000;
     border: 2px solid #333;
     box-shadow: 0 0 15px #4CAF50;
+    max-width: 100%;
+    overflow: hidden;
 }
 canvas {
     display: block;
+    max-width: 100%;
+    height: auto;
 }
 .ui-layer, .overlay {
     position: absolute;
@@ -119,3 +123,76 @@ button {
 }
 button:hover { background-color: #1a5a2a; }
 input { padding: 10px; width: 80%; background: #000; color: #4CAF50; border: 1px solid #4CAF50; font-family: inherit;}
+
+/* Mobile Controls */
+#mobile-controls {
+    display: flex;
+    justify-content: space-around;
+    align-items: center;
+    padding: 10px;
+    background: #0a0a1a;
+    border: 2px solid #333;
+    user-select: none;
+    touch-action: none;
+}
+#d-pad {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 5px;
+}
+.d-pad-horizontal {
+    display: flex;
+    gap: 20px;
+}
+.ctrl-btn {
+    width: 60px;
+    height: 60px;
+    background: #1a5a2a;
+    color: #4CAF50;
+    border: 2px solid #4CAF50;
+    border-radius: 50%;
+    font-size: 24px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+}
+.ctrl-btn:active {
+    background: #2ecc71;
+}
+#action-btns {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+}
+.action-btn {
+    width: 100px;
+    padding: 15px;
+    background: #0a3a1a;
+    color: #4CAF50;
+    border: 2px solid #4CAF50;
+    font-weight: bold;
+    cursor: pointer;
+    border-radius: 8px;
+}
+.action-btn:active {
+    background: #2ecc71;
+}
+
+@media (max-width: 1000px) {
+    .container {
+        flex-direction: column;
+        align-items: center;
+    }
+    .score-board {
+        width: 800px;
+        max-width: 95%;
+    }
+}
+
+@media (pointer: coarse) {
+    #mobile-controls {
+        display: flex !important;
+    }
+}
