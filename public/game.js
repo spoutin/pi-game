@@ -429,33 +429,18 @@ async function lockOrientation() {
 function resizeCanvas() {
     if (!gameArea) return;
 
-    let availableWidth = gameArea.clientWidth;
-    let availableHeight = gameArea.clientHeight;
-
-    const isLandscape = window.innerWidth > window.innerHeight;
-
-    if (isLandscape) {
-        if (hudLeft) availableWidth -= hudLeft.offsetWidth;
-        if (hudRight) availableWidth -= hudRight.offsetWidth;
-    } else {
-        if (hudLeft) availableHeight -= hudLeft.offsetHeight;
-        if (hudRight) availableHeight -= hudRight.offsetHeight;
-    }
-
-    // Aspect Ratio Safety: Maze is strictly 20x15
-    let targetWidth = availableWidth;
-    let targetHeight = availableWidth * (15/20);
-
-    if (targetHeight > availableHeight) {
-        targetHeight = availableHeight;
-        targetWidth = availableHeight * (20/15);
-    }
-
-    canvas.width = targetWidth;
-    canvas.height = targetHeight;
+    // In the new simplified layout, the canvas is 100% of the gameArea
+    // and gameArea itself is constrained by aspect-ratio in CSS.
+    // We just need to set the internal resolution to match the rendered size.
+    
+    const rect = gameArea.getBoundingClientRect();
+    canvas.width = rect.width;
+    canvas.height = rect.height;
+    
     cellSize = canvas.width / mazeCols;
 
     const isMobile = 'ontouchstart' in window || navigator.maxTouchPoints > 0;
+    const isLandscape = window.innerWidth > window.innerHeight;
     const isSmallLandscape = isMobile && isLandscape && window.innerHeight <= 500;
     joystickMaxDist = isSmallLandscape ? 25 : 40;
 }
