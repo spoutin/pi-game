@@ -31,8 +31,8 @@ let lastBump = 0;
 let difficulty = 'easy';
 let freePings = -1; // -1 means unlimited
 let pingsUsed = 0;
-let torpedoesUsed = 0;
-let torpedoLimit = 0;
+let torpedoReloadTime = 10; // seconds
+let torpedoTimer = 0;
 let penaltyPerPing = 3;
 let penaltyPerMine = 10;
 let finalTotalScore = 0;
@@ -181,9 +181,9 @@ function initGame() {
         }
     }
     
-    if (difficulty === 'easy') { freePings = -1; torpedoLimit = 3; }
-    else if (difficulty === 'medium') { freePings = 25; torpedoLimit = 1; }
-    else if (difficulty === 'hard') { freePings = 10; torpedoLimit = 0; }
+    if (difficulty === 'easy') { freePings = -1; torpedoReloadTime = 10; }
+    else if (difficulty === 'medium') { freePings = 25; torpedoReloadTime = 30; }
+    else if (difficulty === 'hard') { freePings = 10; torpedoReloadTime = 60; }
     
     player = { x: 60, y: 140, vx: 0, vy: 0, radius: 10, invulnTimer: 0, angle: 0 };
     pings = [];
@@ -192,7 +192,7 @@ function initGame() {
     surfaceShips = [];
     depthCharges = [];
     pingsUsed = 0;
-    torpedoesUsed = 0;
+    torpedoTimer = 0;
     mineHits = 0;
     currentHealth = maxHealth;
     startTime = Date.now();
@@ -232,8 +232,8 @@ function updatePingHUD() {
             pingCountEl.style.color = '#ff5555';
         }
     }
-    
-    torpedoCountEl.innerText = Math.max(0, torpedoLimit - torpedoesUsed);
+}
+    }
 }
 
 function handlePings(dt) {
@@ -399,8 +399,8 @@ function handlePhysics(dt, time) {
         let dc = depthCharges[i];
         dc.y += dc.vy * dt;
         
-        // Hit map wall or floor
-        if (getCell(dc.x, dc.y) === 1 || dc.y > canvas.height) {
+        // Hit map floor only
+        if (dc.y > canvas.height) {
             playExplosionSound();
             pings.push({ x: dc.x, y: dc.y, radius: 0, opacity: 1, type: 'mine' }); // explosion ping
             depthCharges.splice(i, 1);
@@ -497,6 +497,24 @@ function handlePhysics(dt, time) {
 function drawScene() {
     ctx.fillStyle = '#000';
     ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+    // Draw Surface Water (Gradient)
+    let gradient = ctx.createLinearGradient(0, 0, 0, 100);
+    gradient.addColorStop(0, 'rgba(0, 50, 100, 0.4)');
+    gradient.addColorStop(1, 'rgba(0, 50, 100, 0)');
+    ctx.fillStyle = gradient;
+    ctx.fillRect(0, 0, canvas.width, 100);
+    
+    // Wavy Surface Line
+    ctx.strokeStyle = 'rgba(100, 200, 255, 0.3)';
+    ctx.lineWidth = 2;
+    ctx.beginPath();
+    for (let x = 0; x <= canvas.width; x += 10) {
+        let y = 30 + Math.sin(x * 0.05 + Date.now() * 0.002) * 5;
+        if (x === 0) ctx.moveTo(x, y);
+        else ctx.lineTo(x, y);
+    }
+    ctx.stroke();
 
     // Draw wakes
     for (let w of wakes) {
@@ -739,6 +757,45 @@ function drawScene() {
     }
 }
 
+const torpedoUICanvas = document.getElementById('torpedoUICanvas');
+const torpedoUICtx = torpedoUICanvas ? torpedoUICanvas.getContext('2d') : null;
+
+function drawTorpedoUI() {
+    if (!torpedoUICtx) return;
+    
+    torpedoUICtx.clearRect(0, 0, torpedoUICanvas.width, torpedoUICanvas.height);
+    
+    // Draw outline
+    torpedoUICtx.strokeStyle = '#ff3333';
+    torpedoUICtx.lineWidth = 1;
+    torpedoUICtx.beginPath();
+    torpedoUICtx.ellipse(20, 7.5, 15, 5, 0, 0, Math.PI * 2);
+    torpedoUICtx.stroke();
+    torpedoUICtx.fillStyle = '#555';
+    torpedoUICtx.fillRect(1, 4.5, 6, 6);
+    
+    // Draw fill based on reload progress
+    if (torpedoTimer <= 0) {
+        torpedoUICtx.fillStyle = '#ff3333';
+        torpedoUICtx.beginPath();
+        torpedoUICtx.ellipse(20, 7.5, 15, 5, 0, 0, Math.PI * 2);
+        torpedoUICtx.fill();
+    } else {
+        let progress = 1.0 - (torpedoTimer / torpedoReloadTime);
+        torpedoUICtx.fillStyle = 'rgba(255, 51, 51, 0.5)';
+        
+        torpedoUICtx.save();
+        torpedoUICtx.beginPath();
+        torpedoUICtx.rect(5, 0, 30 * progress, 15);
+        torpedoUICtx.clip();
+        
+        torpedoUICtx.beginPath();
+        torpedoUICtx.ellipse(20, 7.5, 15, 5, 0, 0, Math.PI * 2);
+        torpedoUICtx.fill();
+        torpedoUICtx.restore();
+    }
+}
+
 function gameLoop(time) {
     if (gameState !== 'playing') return;
     let dt = (time - lastFrame) / 1000;
@@ -747,6 +804,12 @@ function gameLoop(time) {
 
     timeElapsed = (Date.now() - startTime) / 1000;
     currentTimeEl.innerText = timeElapsed.toFixed(1);
+    
+    if (torpedoTimer > 0) {
+        torpedoTimer -= dt;
+        if (torpedoTimer < 0) torpedoTimer = 0;
+    }
+    drawTorpedoUI();
 
     handlePhysics(dt, time);
     handlePings(dt);
@@ -815,15 +878,14 @@ window.addEventListener('mousedown', e => {
 
 function fireTorpedo() {
     if (gameState !== 'playing') return;
-    if (torpedoesUsed < torpedoLimit) {
+    if (torpedoTimer <= 0) {
         torpedoes.push({
             x: player.x + Math.cos(player.angle) * player.radius * 2,
             y: player.y + Math.sin(player.angle) * player.radius * 2,
             angle: player.angle,
             speed: 300
         });
-        torpedoesUsed++;
-        updatePingHUD();
+        torpedoTimer = torpedoReloadTime;
         playTorpedoSound();
     }
 }
