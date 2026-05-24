@@ -355,3 +355,76 @@ input { padding: 10px; width: 80%; background: #000; color: #4CAF50; border: 1px
         display: flex !important;
     }
 }
+
+/* Portrait Orientation Overlay */
+@media (orientation: portrait) and (max-width: 1024px) {
+    #orientationOverlay {
+        display: flex !important;
+        z-index: 1000;
+        background: #050510;
+        color: #4CAF50;
+        flex-direction: column;
+    }
+    .rotate-icon {
+        font-size: 80px;
+        margin-bottom: 20px;
+        animation: rotate-anim 2s infinite;
+    }
+}
+@keyframes rotate-anim {
+    0% { transform: rotate(0deg); }
+    50% { transform: rotate(90deg); }
+    100% { transform: rotate(0deg); }
+}
+
+/* Side HUD for Mobile Landscape */
+@media (max-height: 500px) and (orientation: landscape) {
+    .container {
+        padding: 0;
+        gap: 0;
+    }
+    .game-wrapper {
+        flex-direction: row !important;
+        height: 100vh;
+        width: 100vw;
+        justify-content: center;
+    }
+    #hud-panel {
+        flex-direction: column;
+        width: 100px;
+        height: 100%;
+        padding: 10px 5px;
+        box-sizing: border-box;
+        font-size: 14px;
+        border: none;
+        border-right: 2px solid #333;
+        background: #0a0a1a;
+    }
+    #hud-left {
+        flex-direction: column;
+        justify-content: center;
+        height: 50%;
+        gap: 20px;
+    }
+    #hud-right {
+        order: 3;
+        flex-direction: column;
+        justify-content: center;
+        height: 50%;
+        gap: 20px;
+        border-left: 2px solid #333;
+    }
+    .game-area {
+        flex-grow: 1;
+        height: 100%;
+        border: none;
+        max-width: calc(100vw - 200px);
+    }
+    .hud-item {
+        display: flex;
+        flex-direction: column;
+        gap: 5px;
+        text-align: center;
+        align-items: center;
+    }
+}

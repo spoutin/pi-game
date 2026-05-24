@@ -92,15 +92,23 @@
                     </div>
                 </div>
             </div>
+
+            <div id="orientationOverlay" class="hidden overlay orientation-layer">
+                <div class="orientation-box">
+                    <div class="rotate-icon">📱</div>
+                    <h2>PLEASE ROTATE DEVICE</h2>
+                    <p>This mission requires landscape orientation for optimal sonar operations.</p>
+                </div>
+            </div>
             
             <div id="hud-panel">
-                <div id="hud-left">
-                    <span>Health: <span id="healthCount">♥♥♥</span></span>
-                    <span>Time: <span id="currentTime">0.0</span>s</span>
+                <div id="hud-left" class="hud-side">
+                    <div class="hud-item"><span>HEALTH:</span> <span id="healthCount">♥♥♥</span></div>
+                    <div class="hud-item"><span>TIME:</span> <span id="currentTime">0.0</span>s</div>
                 </div>
-                <div id="hud-right">
-                    <span>Pings: <span id="pingCount">Unlimited</span></span>
-                    <span>Torpedo: <canvas id="torpedoUICanvas" width="40" height="15" style="vertical-align: middle;"></canvas></span>
+                <div id="hud-right" class="hud-side">
+                    <div class="hud-item"><span>PINGS:</span> <span id="pingCount">Unlimited</span></div>
+                    <div class="hud-item"><span>TORPEDO:</span> <canvas id="torpedoUICanvas" width="40" height="15"></canvas></div>
                 </div>
             </div>
         </div>
