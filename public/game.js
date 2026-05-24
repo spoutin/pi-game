@@ -70,7 +70,7 @@ const rawMaze = [
     [1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1]
 ];
 
-// Audio Preferences & State
+// Audio State
 let audioCtx;
 let musicNodes = [];
 let engineOsc;
@@ -121,6 +121,7 @@ function initAudio() {
 function startBackgroundAudio() {
     if (!audioCtx) return;
     if (musicNodes.length > 0) return;
+    
     const createDrone = (freq, type, gainValue) => {
         let osc = audioCtx.createOscillator();
         let gain = audioCtx.createGain();
@@ -132,30 +133,62 @@ function startBackgroundAudio() {
         gain.gain.setTargetAtTime(targetGain, audioCtx.currentTime, 2);
         musicNodes.push({ osc, gain, panner, baseGain: gainValue });
     };
-    createDrone(60, 'sine', 0.08); createDrone(90, 'sine', 0.04);
-    engineOsc = audioCtx.createOscillator(); engineGain = audioCtx.createGain();
-    engineOsc.type = 'triangle'; engineOsc.frequency.value = 45; engineGain.gain.value = 0;
-    engineOsc.connect(engineGain); engineGain.connect(audioCtx.destination); engineOsc.start();
+    
+    // Deep underwater drones
+    createDrone(55, 'sine', 0.1); 
+    createDrone(82.41, 'sine', 0.05);
+
+    // Setup Engine Sound
+    engineOsc = audioCtx.createOscillator();
+    engineGain = audioCtx.createGain();
+    engineOsc.type = 'triangle';
+    engineOsc.frequency.value = 45;
+    engineGain.gain.value = 0;
+    engineOsc.connect(engineGain);
+    engineGain.connect(audioCtx.destination);
+    engineOsc.start();
     const engineTargetGain = audioSettings.sfxEnabled ? (0.05 * audioSettings.sfxVolume) : 0;
     engineGain.gain.setTargetAtTime(engineTargetGain, audioCtx.currentTime, 1);
-    const melodyScale = [130.81, 155.56, 174.61, 196.00, 233.08];
-    let step = 0; const tempo = 0.6;
+
+    // Minimal Composed Theme (Slow, haunting sequence)
+    const melodyScale = [130.81, 146.83, 155.56, 174.61, 196.00]; // C, D, Eb, F, G
+    let step = 0;
+    const tempo = 0.8;
+    
     const playNextNote = () => {
         if (gameState !== 'playing') return;
         if (audioSettings.musicEnabled) {
             const now = audioCtx.currentTime;
-            if (step % 4 === 0 || step % 7 === 0) {
-                let osc = audioCtx.createOscillator(); let gain = audioCtx.createGain();
+            // Play a note every 4 beats with some variation
+            if (step % 4 === 0) {
+                let osc = audioCtx.createOscillator();
+                let gain = audioCtx.createGain();
+                let filter = audioCtx.createBiquadFilter();
+                
                 let freq = melodyScale[Math.floor(Math.random() * melodyScale.length)];
-                if (step % 8 === 0) freq /= 2;
-                osc.type = 'sine'; osc.frequency.setValueAtTime(freq, now);
-                const noteGain = 0.03 * audioSettings.musicVolume;
-                gain.gain.setValueAtTime(0, now); gain.gain.linearRampToValueAtTime(noteGain, now + 0.1); gain.gain.exponentialRampToValueAtTime(0.001, now + tempo * 2);
-                osc.connect(gain); gain.connect(audioCtx.destination);
-                osc.start(now); osc.stop(now + tempo * 2);
+                if (step % 16 === 0) freq /= 2; // Deep bass start of phrase
+                
+                osc.type = 'sine';
+                osc.frequency.setValueAtTime(freq, now);
+                
+                filter.type = 'lowpass';
+                filter.frequency.value = 400;
+                
+                const noteGain = 0.04 * audioSettings.musicVolume;
+                gain.gain.setValueAtTime(0, now);
+                gain.gain.linearRampToValueAtTime(noteGain, now + 0.5);
+                gain.gain.exponentialRampToValueAtTime(0.001, now + 4);
+                
+                osc.connect(filter);
+                filter.connect(gain);
+                gain.connect(audioCtx.destination);
+                
+                osc.start(now);
+                osc.stop(now + 4);
             }
         }
-        step++; musicTimer = setTimeout(playNextNote, tempo * 1000);
+        step++;
+        musicTimer = setTimeout(playNextNote, tempo * 1000);
     };
     playNextNote();
 }
@@ -175,73 +208,138 @@ function stopBackgroundAudio() {
 
 function playPingSound(isMine = false) {
     if (!audioCtx || !audioSettings.sfxEnabled) return;
-    let osc = audioCtx.createOscillator(); let gain = audioCtx.createGain();
-    osc.connect(gain); gain.connect(audioCtx.destination);
-    if (isMine) { osc.type = 'sawtooth'; osc.frequency.setValueAtTime(300, audioCtx.currentTime); osc.frequency.exponentialRampToValueAtTime(150, audioCtx.currentTime + 0.4); }
-    else { osc.type = 'sine'; osc.frequency.setValueAtTime(800, audioCtx.currentTime); osc.frequency.exponentialRampToValueAtTime(300, audioCtx.currentTime + 0.3); }
+    let osc = audioCtx.createOscillator();
+    let gain = audioCtx.createGain();
+    osc.connect(gain);
+    gain.connect(audioCtx.destination);
+    if (isMine) {
+        osc.type = 'sawtooth';
+        osc.frequency.setValueAtTime(300, audioCtx.currentTime);
+        osc.frequency.exponentialRampToValueAtTime(150, audioCtx.currentTime + 0.4);
+    } else {
+        osc.type = 'sine';
+        osc.frequency.setValueAtTime(800, audioCtx.currentTime);
+        osc.frequency.exponentialRampToValueAtTime(300, audioCtx.currentTime + 0.3);
+    }
     const baseGain = 0.3 * audioSettings.sfxVolume;
-    gain.gain.setValueAtTime(baseGain, audioCtx.currentTime); gain.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + 0.3);
-    osc.start(); osc.stop(audioCtx.currentTime + 0.4);
+    gain.gain.setValueAtTime(baseGain, audioCtx.currentTime);
+    gain.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + 0.3);
+    osc.start();
+    osc.stop(audioCtx.currentTime + 0.4);
 }
 
 function playBumpSound() {
     if (!audioCtx || !audioSettings.sfxEnabled) return;
-    let osc = audioCtx.createOscillator(); let gain = audioCtx.createGain();
-    osc.connect(gain); gain.connect(audioCtx.destination);
-    osc.type = 'triangle'; osc.frequency.setValueAtTime(100, audioCtx.currentTime); osc.frequency.exponentialRampToValueAtTime(50, audioCtx.currentTime + 0.1);
+    let osc = audioCtx.createOscillator();
+    let gain = audioCtx.createGain();
+    osc.connect(gain);
+    gain.connect(audioCtx.destination);
+    osc.type = 'triangle';
+    osc.frequency.setValueAtTime(100, audioCtx.currentTime);
+    osc.frequency.exponentialRampToValueAtTime(50, audioCtx.currentTime + 0.1);
     const baseGain = 0.2 * audioSettings.sfxVolume;
-    gain.gain.setValueAtTime(baseGain, audioCtx.currentTime); gain.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + 0.1);
-    osc.start(); osc.stop(audioCtx.currentTime + 0.1);
+    gain.gain.setValueAtTime(baseGain, audioCtx.currentTime);
+    gain.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + 0.1);
+    osc.start();
+    osc.stop(audioCtx.currentTime + 0.1);
 }
 
 function playExplosionSound() {
     if (!audioCtx || !audioSettings.sfxEnabled) return;
-    let osc = audioCtx.createOscillator(); let gain = audioCtx.createGain();
-    osc.connect(gain); gain.connect(audioCtx.destination);
-    osc.type = 'square'; osc.frequency.setValueAtTime(100, audioCtx.currentTime); osc.frequency.exponentialRampToValueAtTime(20, audioCtx.currentTime + 0.5);
+    let osc = audioCtx.createOscillator();
+    let gain = audioCtx.createGain();
+    osc.connect(gain);
+    gain.connect(audioCtx.destination);
+    osc.type = 'square';
+    osc.frequency.setValueAtTime(100, audioCtx.currentTime);
+    osc.frequency.exponentialRampToValueAtTime(20, audioCtx.currentTime + 0.5);
     const baseGain = 0.5 * audioSettings.sfxVolume;
-    gain.gain.setValueAtTime(baseGain, audioCtx.currentTime); gain.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + 0.5);
-    osc.start(); osc.stop(audioCtx.currentTime + 0.5);
+    gain.gain.setValueAtTime(baseGain, audioCtx.currentTime);
+    gain.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + 0.5);
+    osc.start();
+    osc.stop(audioCtx.currentTime + 0.5);
 }
 
 function playWinSound() {
     if (!audioCtx || !audioSettings.sfxEnabled) return;
     const freqs = [440, 554, 659, 880];
     freqs.forEach((f, i) => {
-        let osc = audioCtx.createOscillator(); let gain = audioCtx.createGain();
-        osc.connect(gain); gain.connect(audioCtx.destination);
-        osc.type = 'sine'; osc.frequency.value = f;
+        let osc = audioCtx.createOscillator();
+        let gain = audioCtx.createGain();
+        osc.connect(gain);
+        gain.connect(audioCtx.destination);
+        osc.type = 'sine';
+        osc.frequency.value = f;
         const noteGain = 0.3 * audioSettings.sfxVolume;
-        gain.gain.setValueAtTime(0, audioCtx.currentTime + i*0.1); gain.gain.linearRampToValueAtTime(noteGain, audioCtx.currentTime + i*0.1 + 0.05); gain.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + i*0.1 + 0.5);
-        osc.start(audioCtx.currentTime + i*0.1); osc.stop(audioCtx.currentTime + i*0.1 + 0.5);
+        gain.gain.setValueAtTime(0, audioCtx.currentTime + i*0.1);
+        gain.gain.linearRampToValueAtTime(noteGain, audioCtx.currentTime + i*0.1 + 0.05);
+        gain.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + i*0.1 + 0.5);
+        osc.start(audioCtx.currentTime + i*0.1);
+        osc.stop(audioCtx.currentTime + i*0.1 + 0.5);
     });
 }
 
 function playTorpedoSound() {
     if (!audioCtx || !audioSettings.sfxEnabled) return;
-    let osc = audioCtx.createOscillator(); let gain = audioCtx.createGain();
-    osc.connect(gain); gain.connect(audioCtx.destination);
-    osc.type = 'triangle'; osc.frequency.setValueAtTime(400, audioCtx.currentTime); osc.frequency.exponentialRampToValueAtTime(100, audioCtx.currentTime + 0.8);
+    let osc = audioCtx.createOscillator();
+    let gain = audioCtx.createGain();
+    osc.connect(gain);
+    gain.connect(audioCtx.destination);
+    osc.type = 'triangle';
+    osc.frequency.setValueAtTime(400, audioCtx.currentTime);
+    osc.frequency.exponentialRampToValueAtTime(100, audioCtx.currentTime + 0.8);
     const baseGain = 0.4 * audioSettings.sfxVolume;
-    gain.gain.setValueAtTime(baseGain, audioCtx.currentTime); gain.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + 0.8);
-    osc.start(); osc.stop(audioCtx.currentTime + 0.8);
+    gain.gain.setValueAtTime(baseGain, audioCtx.currentTime);
+    gain.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + 0.8);
+    osc.start();
+    osc.stop(audioCtx.currentTime + 0.8);
 }
 
 function playTypewriterSound() {
     if (!audioCtx || !audioSettings.sfxEnabled) return;
     const now = audioCtx.currentTime;
-    let osc1 = audioCtx.createOscillator(); let gain1 = audioCtx.createGain();
-    osc1.type = 'square'; osc1.frequency.setValueAtTime(150, now); osc1.frequency.exponentialRampToValueAtTime(40, now + 0.02);
-    gain1.gain.setValueAtTime(0.1 * audioSettings.sfxVolume, now); gain1.gain.exponentialRampToValueAtTime(0.001, now + 0.02);
-    osc1.connect(gain1); gain1.connect(audioCtx.destination);
-    let osc2 = audioCtx.createOscillator(); let gain2 = audioCtx.createGain();
-    osc2.type = 'triangle'; osc2.frequency.setValueAtTime(80, now);
-    gain2.gain.setValueAtTime(0.05 * audioSettings.sfxVolume, now); gain2.gain.exponentialRampToValueAtTime(0.001, now + 0.04);
-    osc2.connect(gain2); gain2.connect(audioCtx.destination);
-    osc1.start(now); osc1.stop(now + 0.02); osc2.start(now); osc2.stop(now + 0.04);
+    
+    // 1. Sharp high-frequency click (the metal arm hitting the paper)
+    let clickOsc = audioCtx.createOscillator();
+    let clickGain = audioCtx.createGain();
+    clickOsc.type = 'square';
+    clickOsc.frequency.setValueAtTime(1200, now);
+    clickOsc.frequency.exponentialRampToValueAtTime(800, now + 0.01);
+    clickGain.gain.setValueAtTime(0.1 * audioSettings.sfxVolume, now);
+    clickGain.gain.exponentialRampToValueAtTime(0.001, now + 0.01);
+    clickOsc.connect(clickGain);
+    clickGain.connect(audioCtx.destination);
+    
+    // 2. Mid-frequency "thwack" (the mechanical action)
+    let thwackOsc = audioCtx.createOscillator();
+    let thwackGain = audioCtx.createGain();
+    thwackOsc.type = 'triangle';
+    thwackOsc.frequency.setValueAtTime(200, now);
+    thwackOsc.frequency.exponentialRampToValueAtTime(50, now + 0.03);
+    thwackGain.gain.setValueAtTime(0.15 * audioSettings.sfxVolume, now);
+    thwackGain.gain.exponentialRampToValueAtTime(0.001, now + 0.03);
+    thwackOsc.connect(thwackGain);
+    thwackGain.connect(audioCtx.destination);
+
+    // 3. Low-frequency "thud" (the weight of the machine)
+    let thudOsc = audioCtx.createOscillator();
+    let thudGain = audioCtx.createGain();
+    thudOsc.type = 'sine';
+    thudOsc.frequency.setValueAtTime(80, now);
+    thudGain.gain.setValueAtTime(0.05 * audioSettings.sfxVolume, now);
+    thudGain.gain.exponentialRampToValueAtTime(0.001, now + 0.05);
+    thudOsc.connect(thudGain);
+    thudGain.connect(audioCtx.destination);
+    
+    clickOsc.start(now);
+    clickOsc.stop(now + 0.01);
+    thwackOsc.start(now);
+    thwackOsc.stop(now + 0.03);
+    thudOsc.start(now);
+    thudOsc.stop(now + 0.05);
 }
 
-// UI & Graphics Functions
+// UI & Layout
 function resizeCanvas() {
     const isMobile = 'ontouchstart' in window || navigator.maxTouchPoints > 0;
     const padding = isMobile ? 5 : 20;
@@ -305,7 +403,7 @@ function generateMaze(cols, rows) {
     return newMaze;
 }
 
-// Core Game Loop & Logic
+// Game Loop Functions
 async function initGame() {
     initAudio(); startBackgroundAudio(); resizeCanvas();
     for (const radio of difficultyRadios) { if (radio.checked) { difficulty = radio.value; break; } }
@@ -334,7 +432,7 @@ function handlePhysics(dt, time) {
     if (keys.a) player.vx -= accel * dt; if (keys.d) player.vx += accel * dt;
     player.vx *= friction; player.vy *= friction;
     if (engineOsc && engineGain) {
-        const speed = Math.hypot(player.vx, player.vy); const normalizedSpeed = Math.min(1, speed / 300);
+        const speed = Math.hypot(player.vx, player.vy); const normalizedSpeed = Math.min(1, speed / (cellSize * 5));
         engineOsc.frequency.setTargetAtTime(45 + normalizedSpeed * 20, audioCtx.currentTime, 0.1);
         const engineTargetGain = audioSettings.sfxEnabled ? ((0.02 + normalizedSpeed * 0.05) * audioSettings.sfxVolume) : 0;
         engineGain.gain.setTargetAtTime(engineTargetGain, audioCtx.currentTime, 0.1);
@@ -531,6 +629,7 @@ const joystickContainer = document.getElementById('joystick-container');
 const joystickKnob = document.getElementById('joystick-knob');
 const btnPing = document.getElementById('btn-ping');
 const btnFire = document.getElementById('btn-fire');
+
 let joystickActive = false; let joystickStartX = 0; let joystickStartY = 0; const joystickMaxDist = 40;
 
 function handleJoystick(e) {
